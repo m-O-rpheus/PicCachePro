@@ -4,73 +4,103 @@
     class PicCachePro { // PicCachePro::xxx();
 
 
-        // Generates a WebP data image URL as base64 from an image path (jpg, png, gif).
-
-        /*
-            Override the default settings:
-
-            $options = array(
-                'imageFormat' => 'webp',                        // Expects a string with the target file format 'webp'
-                'compressionQuality' => 65,                     // An int between 1 and 100, 1 = high compression, 100 low compression
-                'targetWidth' => 0,                             // Resize the source image int 0 no, int 500 pixel width. The height adjusts automatically
-                'resizeFilter' => Imagick::FILTER_CATROM,       // https://www.php.net/manual/de/imagick.constants.php#imagick.constants.filters
-                'setOption' => array(                           // https://imagemagick.org/script/webp.php
-                    'webp:method' => '6',
-                    'webp:alpha-filtering' => '2',
-                    'webp:lossless' => 'false',
-                )
-            );
-        */
+        // Write some content to an .cache file.
         // -----------------------------------------------------------------------------------------------------------------------------
 
-        public static function picture_createfrom_path( string $picturePath, array $options = array() ) : string {
+        public static function setDataCache( string $cachePath, string $data ) : bool {
+
+            if( !file_exists( $cachePath ) ) {
+
+                if( pathinfo( $cachePath )['extension'] === 'cache' ) {
+
+                    if( file_put_contents( $cachePath, $data, LOCK_EX ) !== false ) {
+
+                        if( file_exists( $cachePath ) ) {
+
+                            return (bool) true;
+                        }
+                    }
+                }
+            }
+
+            return (bool) false;
+        }
+
+
+
+
+
+        // Read some content from an .cache file.
+        // -----------------------------------------------------------------------------------------------------------------------------
+
+        public static function getDataCache( string $cachePath ) : string {
+
+            if( file_exists( $cachePath ) ) {
+
+                if( pathinfo( $cachePath )['extension'] === 'cache' ) {
+
+                    return (string) file_get_contents( $cachePath );
+                }
+            }
+
+            return (string) '';
+        }
+
+
+
+
+
+        // Generates a AVIF dataurl image as base64 from an image path (jpg, png, gif).
+        // -----------------------------------------------------------------------------------------------------------------------------
+
+        public static function avifCreateFromPath( string $picturePath, int $quality = 30, int $targetWidth = 0 ) : string {
 
             if( file_exists( $picturePath ) ) {
 
-                if( extension_loaded('imagick') === true ) {
-    
-                    $settings = array_merge( [
-                        'imageFormat' => 'webp',
-                        'compressionQuality' => 65,
-                        'targetWidth' => 0,
-                        'resizeFilter' => Imagick::FILTER_CATROM,
-                        'setOption' => array(
-                            'webp:method' => '6',
-                            'webp:alpha-filtering' => '2',
-                            'webp:lossless' => 'false',
-                        )
-                    ], $options );
+                // Lösung bauen, wenn ( $targetWidth > 0 ) ist, dann fülle auf die nächste 100er Zahl auf. Dies verhindert das jeder Pixel seperat gespeichert wird. Dies ergibt dann nämlich pro Bild max 40 cache dateien pro bild.
 
+                $cachePath = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . hash('sha3-512', $picturePath . strval($quality) . strval($targetWidth)) . '.cache';
+                $cacheData = self::getDataCache( $cachePath );
 
+                if( empty( $cacheData ) ) {
 
-                    $image = new Imagick();
-                    $image->readImage($picturePath);
-    
-                    if( $settings['targetWidth'] > 0 ) {
-    
-                        $sourceWidth  = $image->getImageWidth();
-                        $sourceHeight = $image->getImageHeight();
-    
-                        // Calculate the aspect ratio inner bracket & then calculate new height based on the aspect ratio and new width outer bracket.
-                        $targetWidth  = $settings['targetWidth'];
-                        $targetHeight = ceil($targetWidth / ($sourceWidth / $sourceHeight));
-    
-                        $image->resizeImage($targetWidth, $targetHeight, $settings['resizeFilter'], 1, true);
+                    if( extension_loaded('imagick') === true ) {
+
+                        $image = new Imagick();
+                        $image->readImage($picturePath);
+
+                        if( $targetWidth > 0 ) {
+
+                            $sourceWidth  = $image->getImageWidth();
+                            $sourceHeight = $image->getImageHeight();
+
+                            if( $targetWidth < $sourceWidth ) {
+
+                                // Calculate the aspect ratio inner bracket & then calculate new height based on the aspect ratio and new width outer bracket.
+                                $targetHeight = ceil($targetWidth / ($sourceWidth / $sourceHeight));
+
+                                $image->resizeImage($targetWidth, $targetHeight, Imagick::FILTER_CATROM, 1, true);
+                            }
+                        }
+
+                        $image->setImageFormat('avif');
+
+                        //$image->setOption('avif:lossless', 'false'); NOT WORKING
+                        //$image->setOption('avif:codec', 'libaom-av1'); NOT WORKING
+                        //$image->setOption('avif:quality', '50'); NOT WORKING
+
+                        $image->setCompressionQuality($quality);
+                        $dataurl = 'data:image/avif;base64,' . base64_encode( $image->getImageBlob() ); 
+                        $image->clear();
+
+                        self::setDataCache( $cachePath, $dataurl );
+
+                        return (string) $dataurl;
                     }
-    
-                    $image->setImageFormat( $settings['imageFormat'] );
-    
-                    foreach( $settings['setOption'] as $key => $value ) {
+                }
+                else {
 
-                        $image->setOption($key, $value); 
-                    }
-                    $image->setImageCompressionQuality( $settings['compressionQuality'] );
-    
-                    $dataurl = 'data:image/' . $settings['imageFormat'] . ';base64,' . base64_encode( $image->getImageBlob() ); 
-                                    
-                    $image->clear();
-    
-                    return (string) $dataurl;
+                    return (string) $cacheData;
                 }
             }
 
@@ -79,6 +109,6 @@
 
 
     }
-    
+
 
 ?>
