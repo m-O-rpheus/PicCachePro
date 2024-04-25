@@ -4,18 +4,18 @@
     class PicCachePro { // PicCachePro::xxx();
 
 
-        // Write some content to an .cache file.
+        // Write some content to an .raw file.
         // -----------------------------------------------------------------------------------------------------------------------------
 
-        public static function setDataCache( string $cachePath, string $data ) : bool {
+        public static function setPersistentData( string $filepath, string $rawdata ) : bool {
 
-            if( !file_exists( $cachePath ) ) {
+            if( !file_exists( $filepath ) ) {
 
-                if( pathinfo( $cachePath )['extension'] === 'cache' ) {
+                if( pathinfo( $filepath )['extension'] === 'raw' ) {
 
-                    if( file_put_contents( $cachePath, $data, LOCK_EX ) !== false ) {
+                    if( file_put_contents( $filepath, $rawdata, LOCK_EX ) !== false ) {
 
-                        if( file_exists( $cachePath ) ) {
+                        if( file_exists( $filepath ) ) {
 
                             return (bool) true;
                         }
@@ -30,16 +30,16 @@
 
 
 
-        // Read some content from an .cache file.
+        // Read some content from an .raw file.
         // -----------------------------------------------------------------------------------------------------------------------------
 
-        public static function getDataCache( string $cachePath ) : string {
+        public static function getPersistentData( string $filepath ) : string {
 
-            if( file_exists( $cachePath ) ) {
+            if( file_exists( $filepath ) ) {
 
-                if( pathinfo( $cachePath )['extension'] === 'cache' ) {
+                if( pathinfo( $filepath )['extension'] === 'raw' ) {
 
-                    return (string) file_get_contents( $cachePath );
+                    return (string) file_get_contents( $filepath );
                 }
             }
 
@@ -53,58 +53,51 @@
         // Generates a AVIF dataurl image as base64 from an image path (jpg, png, gif).
         // -----------------------------------------------------------------------------------------------------------------------------
 
-        public static function avifCreateFromPath( string $picturePath, int $quality = 30, int $targetWidth = 0 ) : string {
+        public static function avifCreateRawFromPath( string $picturePath, int $quality = 30, int $targetWidth = 0 ) : string {
+
+            $rawdata = '';
 
             if( file_exists( $picturePath ) ) {
 
-                // Lösung bauen, wenn ( $targetWidth > 0 ) ist, dann fülle auf die nächste 100er Zahl auf. Dies verhindert das jeder Pixel seperat gespeichert wird. Dies ergibt dann nämlich pro Bild max 40 cache dateien pro bild.
+                // Lösung bauen, wenn ( $targetWidth > 0 ) ist, dann fülle auf die nächste 100er Zahl auf. Dies verhindert das jeder Pixel seperat gespeichert wird. Dies ergibt dann nämlich pro Bild max 40 dateien pro bild.
 
-                $cachePath = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . hash('sha3-512', $picturePath . strval($quality) . strval($targetWidth)) . '.cache';
-                $cacheData = self::getDataCache( $cachePath );
+                $filepath = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . hash('sha3-512', $picturePath . strval($quality) . strval($targetWidth)) . '.raw';
+                $rawdata  = self::getPersistentData( $filepath );
 
-                if( empty( $cacheData ) ) {
+                if( empty( $rawdata ) && extension_loaded('imagick') === true ) {
 
-                    if( extension_loaded('imagick') === true ) {
+                    $image = new Imagick();
+                    $image->readImage($picturePath);
 
-                        $image = new Imagick();
-                        $image->readImage($picturePath);
+                    if( $targetWidth > 0 ) {
 
-                        if( $targetWidth > 0 ) {
+                        $sourceWidth  = $image->getImageWidth();
+                        $sourceHeight = $image->getImageHeight();
 
-                            $sourceWidth  = $image->getImageWidth();
-                            $sourceHeight = $image->getImageHeight();
+                        if( $targetWidth < $sourceWidth ) {
 
-                            if( $targetWidth < $sourceWidth ) {
+                            // Calculate the aspect ratio inner bracket & then calculate new height based on the aspect ratio and new width outer bracket.
+                            $targetHeight = ceil($targetWidth / ($sourceWidth / $sourceHeight));
 
-                                // Calculate the aspect ratio inner bracket & then calculate new height based on the aspect ratio and new width outer bracket.
-                                $targetHeight = ceil($targetWidth / ($sourceWidth / $sourceHeight));
-
-                                $image->resizeImage($targetWidth, $targetHeight, Imagick::FILTER_CATROM, 1, true);
-                            }
+                            $image->resizeImage($targetWidth, $targetHeight, Imagick::FILTER_CATROM, 1, true);
                         }
-
-                        $image->setImageFormat('avif');
-
-                        //$image->setOption('avif:lossless', 'false'); NOT WORKING
-                        //$image->setOption('avif:codec', 'libaom-av1'); NOT WORKING
-                        //$image->setOption('avif:quality', '50'); NOT WORKING
-
-                        $image->setCompressionQuality($quality);
-                        $dataurl = 'data:image/avif;base64,' . base64_encode( $image->getImageBlob() ); 
-                        $image->clear();
-
-                        self::setDataCache( $cachePath, $dataurl );
-
-                        return (string) $dataurl;
                     }
-                }
-                else {
 
-                    return (string) $cacheData;
+                    $image->setImageFormat('avif');
+
+                    //$image->setOption('avif:lossless', 'false'); NOT WORKING
+                    //$image->setOption('avif:codec', 'libaom-av1'); NOT WORKING
+                    //$image->setOption('avif:quality', '50'); NOT WORKING
+
+                    $image->setCompressionQuality($quality);
+                    $rawdata = $image->getImageBlob(); 
+                    $image->clear();
+
+                    self::setPersistentData( $filepath, $rawdata );
                 }
             }
 
-            return (string) '';
+            return (string) $rawdata;
         }
 
 
