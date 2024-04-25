@@ -1,12 +1,15 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 0.92
+### Version 0.93
 
 ---
 
 ...
 
 ---
+
+#### Version 0.93:
+- Round up the image width.
 
 #### Version 0.92:
 - Code Update.

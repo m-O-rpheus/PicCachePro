@@ -59,7 +59,11 @@
 
             if( file_exists( $picturePath ) ) {
 
-                // Lösung bauen, wenn ( $targetWidth > 0 ) ist, dann fülle auf die nächste 100er Zahl auf. Dies verhindert das jeder Pixel seperat gespeichert wird. Dies ergibt dann nämlich pro Bild max 40 dateien pro bild.
+                // Round up the image width. This prevents each pixel size from being stored separately. Instead, it is rounded up to the nearest 100th place.
+                if( $targetWidth > 0 ) {
+
+                    $targetWidth = ( ceil( $targetWidth / 100 ) * 100 ); 
+                }
 
                 $filepath = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . hash('sha3-512', $picturePath . strval($quality) . strval($targetWidth)) . '.raw';
                 $rawdata  = self::getPersistentData( $filepath );
