@@ -1,12 +1,15 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 0.93
+### Version 0.94
 
 ---
 
 ...
 
 ---
+
+#### Version 0.94:
+- Bugfixing: avifCreateRawFromPath.
 
 #### Version 0.93:
 - Round up the image width.
