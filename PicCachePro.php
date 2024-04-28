@@ -50,7 +50,7 @@
 
 
 
-        // Generates a AVIF dataurl image as base64 from an image path (jpg, png, gif).
+        // Creates an AVIF image as binary data from an image path (jpg, png, gif).
         // quality: An int between 1 and 100, 1 = high compression, 100 low compression.
         // targetWidth: Image width in pixels.
         // -----------------------------------------------------------------------------------------------------------------------------
