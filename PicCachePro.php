@@ -50,77 +50,83 @@
 
 
 
-        // Creates an AVIF image as binary data from an image path (jpg, png, gif).
-        // quality: An int between 1 and 100, 1 = high compression, 100 low compression.
-        // targetWidth: Image width in pixels.
+        // Creates an AVIF image as binary data from an image path
+        // #picturePath: Enter the full path to a raster image in JPG, PNG, or GIF format.
+        // #quality:     An integer between 1 and 100. 1 = high compression, 100 = low compression. The default value is 0, which corresponds to a compression level of 30.
+        // #targetWidth: The desired image width in pixels to which the target image (AVIF) should be downscaled. If targetWidth is 0 or the same as the source width,
+        // no downscaling will be applied, and the original image size will be retained. Downscaling will always be to the nearest rounded down hundred.
         // -----------------------------------------------------------------------------------------------------------------------------
 
-        public static function avifCreateRawFromPath( string $picturePath, int $quality = 30, int $targetWidth = 0 ) : string {
+        public static function avifCreateRawFromPath( string $picturePath, int $quality = 0, int $targetWidth = 0 ) : string {
 
             $rawdata = '';
 
             if( !empty( $picturePath ) && file_exists( $picturePath ) && extension_loaded('imagick') === true ) {
 
-                $size = getimagesize( $picturePath );
+                $image = new Imagick();
 
-                $sourceWidth  = $size[0];
-                $sourceHeight = $size[1];
+                if( !empty( $image->queryFormats('AVIF') ) ) {
 
+                    $size = getimagesize( $picturePath );
 
-                // Initially use sourceWidth as the width for the image.
-                // Override this value if targetWidth is greater than 0 but less than sourceWidth.
-                // -----
-                $realWidth = $sourceWidth;
-
-                if( $targetWidth > 0 ) {
-
-                    // Round up the image width. This prevents each pixel size from being stored separately. Instead, it is rounded up to the nearest 100th place.
-                    $targetWidth = ( ceil( $targetWidth / 100 ) * 100 );
-
-                    if( $targetWidth < $sourceWidth ) {
-
-                        $realWidth = $targetWidth;
-                    }
-                }
-                // -----
+                    $sourceWidth  = $size[0];
+                    $sourceHeight = $size[1];
 
 
-                // Adjust the image quality range.
-                if( $quality < 1 || $quality > 100 ) $quality = 30;
-
-
-                $filepath = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . hash('sha3-512', $picturePath . strval($quality) . strval($realWidth)) . '.raw';
-                $rawdata  = self::getPersistentData( $filepath );
-
-                if( empty( $rawdata ) ) {
-
-                    $image = new Imagick();
-                    $image->readImage( $picturePath );
-
-
-                    // Resize image.
+                    // Initially use sourceWidth as the width for the image.
+                    // Override this value if targetWidth is greater than 0 but less than sourceWidth.
                     // -----
-                    if( $realWidth !== $sourceWidth ) {
+                    $realWidth = $sourceWidth;
 
-                        // Calculate the aspect ratio inner bracket & then calculate new height based on the aspect ratio and new width outer bracket.
-                        $realHeight = ceil($realWidth / ($sourceWidth / $sourceHeight));
+                    if( $targetWidth > 0 ) {
 
-                        $image->resizeImage($realWidth, $realHeight, Imagick::FILTER_LANCZOS, 1, true);
+                        // Round up the image width. This prevents each pixel size from being stored separately. Instead, it is rounded up to the nearest 100th place.
+                        $targetWidth = ( ceil( $targetWidth / 100 ) * 100 );
+
+                        if( $targetWidth < $sourceWidth ) {
+
+                            $realWidth = $targetWidth;
+                        }
                     }
                     // -----
 
 
-                    $image->setImageFormat('avif');
+                    // Adjust the image quality range.
+                    if( $quality < 1 || $quality > 100 ) $quality = 30; // Fallback for default or invalid setting.
 
-                    //$image->setOption('avif:lossless', 'false'); NOT WORKING
-                    //$image->setOption('avif:codec', 'libaom-av1'); NOT WORKING
-                    //$image->setOption('avif:quality', '50'); NOT WORKING
 
-                    $image->setCompressionQuality($quality);
-                    $rawdata = $image->getImageBlob(); 
-                    $image->clear();
+                    $filepath = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . hash('sha3-512', $picturePath . strval($quality) . strval($realWidth)) . '.raw';
+                    $rawdata  = self::getPersistentData( $filepath );
 
-                    self::setPersistentData( $filepath, $rawdata );
+                    if( empty( $rawdata ) ) {
+
+                        $image->readImage( $picturePath );
+
+
+                        // Resize image.
+                        // -----
+                        if( $realWidth !== $sourceWidth ) {
+
+                            // Calculate the aspect ratio inner bracket & then calculate new height based on the aspect ratio and real width outer bracket.
+                            $realHeight = ceil($realWidth / ($sourceWidth / $sourceHeight));
+
+                            $image->resizeImage($realWidth, $realHeight, Imagick::FILTER_LANCZOS, 1, true);
+                        }
+                        // -----
+
+
+                        $image->setImageFormat('avif');
+
+                        //$image->setOption('avif:lossless', 'false'); NOT WORKING
+                        //$image->setOption('avif:codec', 'libaom-av1'); NOT WORKING
+                        //$image->setOption('avif:quality', '50'); NOT WORKING
+
+                        $image->setCompressionQuality($quality);
+                        $rawdata = $image->getImageBlob(); 
+                        $image->clear();
+
+                        self::setPersistentData( $filepath, $rawdata );
+                    }
                 }
             }
 

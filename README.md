@@ -1,18 +1,26 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 0.94
+### Version 0.95
 
 ---
 
-...
+Dieses Framework konvertiert eine Rastergrafik, die über ihren vollständigen Serverpfad ausgewählt wird, in das AVIF-Format. Dabei kannst du sowohl die Bildqualität als auch die Zielbreite des AVIF-Bildes nach deinen Wünschen einstellen.
+
+Als Zielbreite wird entweder die Quellbreite verwendet oder, falls du eine andere Breite angibst, wird das Bild auf die nächste Hunderterstelle herunterskaliert, sofern diese kleiner als die Quellbreite ist.
+
+Um die Leistung zu optimieren, wird ein zusätzlicher AVIF-Cache verwendet. Vor der Erstellung des AVIF-Bildes überprüft das Framework, ob bereits ein Bild mit den angegebenen Parametern im Cache vorhanden ist. Falls ja, wird das AVIF-Bild aus dem Cache verwendet. Andernfalls wird das AVIF-Bild neu erstellt und anschließend im Cache gespeichert, um den Zugriff bei zukünftigen Anfragen zu beschleunigen.
 
 ---
+
+#### Version 0.95:
+- Bugfix: Prevent a PHP error if the server does not support imagemagick AVIF.
+- Comments updated.
 
 #### Version 0.94:
-- Bugfixing: avifCreateRawFromPath.
+- Bugfix: avifCreateRawFromPath.
 
 #### Version 0.93:
-- Round up the image width.
+- Round the image width.
 
 #### Version 0.92:
 - Code Update.
