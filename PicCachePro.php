@@ -57,17 +57,14 @@
         // no downscaling will be applied, and the original image size will be retained. Downscaling will always be to the nearest rounded down hundred.
         // -----------------------------------------------------------------------------------------------------------------------------
 
-        public static function avifCreateRawFromPath( string $picturePath, int $quality = 0, int $targetWidth = 0 ) : string {
+        public static function avifCreateRawFromPath( string $picturePath, int $quality = 0, int $targetWidth = 0, callable $callback ) : void {
 
-            $rawdata = '';
-
-            if( !empty( $picturePath ) && file_exists( $picturePath ) && extension_loaded('imagick') === true ) {
+            if( !empty( $picturePath ) && file_exists( $picturePath ) && extension_loaded( 'imagick' ) === true ) {
 
                 $image = new Imagick();
+                $size  = getimagesize( $picturePath );
 
-                if( !empty( $image->queryFormats('AVIF') ) ) {
-
-                    $size = getimagesize( $picturePath );
+                if( !empty( $image->queryFormats( 'AVIF' ) ) && !empty( $size ) ) {
 
                     $sourceWidth  = $size[0];
                     $sourceHeight = $size[1];
@@ -76,7 +73,8 @@
                     // Initially use sourceWidth as the width for the image.
                     // Override this value if targetWidth is greater than 0 but less than sourceWidth.
                     // -----
-                    $realWidth = $sourceWidth;
+                    $realWidth  = $sourceWidth;
+                    $realHeight = $sourceHeight;
 
                     if( $targetWidth > 0 ) {
 
@@ -85,7 +83,8 @@
 
                         if( $targetWidth < $sourceWidth ) {
 
-                            $realWidth = $targetWidth;
+                            $realWidth  = $targetWidth;
+                            $realHeight = round( $targetWidth / ( $sourceWidth / $sourceHeight ) );
                         }
                     }
                     // -----
@@ -95,7 +94,7 @@
                     if( $quality < 1 || $quality > 100 ) $quality = 30; // Fallback for default or invalid setting.
 
 
-                    $filepath = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . hash('sha3-512', $picturePath . strval($quality) . strval($realWidth)) . '.raw';
+                    $filepath = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . hash( 'sha3-512', $picturePath . strval( $quality ) . strval( $realWidth ) ) . '.raw';
                     $rawdata  = self::getPersistentData( $filepath );
 
                     if( empty( $rawdata ) ) {
@@ -108,29 +107,27 @@
                         if( $realWidth !== $sourceWidth ) {
 
                             // Calculate the aspect ratio inner bracket & then calculate new height based on the aspect ratio and real width outer bracket.
-                            $realHeight = ceil($realWidth / ($sourceWidth / $sourceHeight));
-
-                            $image->resizeImage($realWidth, $realHeight, Imagick::FILTER_LANCZOS, 1, true);
+                            $image->resizeImage( $realWidth, $realHeight, Imagick::FILTER_LANCZOS, 1, true );
                         }
                         // -----
 
 
-                        $image->setImageFormat('avif');
+                        $image->setImageFormat( 'avif' );
 
                         //$image->setOption('avif:lossless', 'false'); NOT WORKING
                         //$image->setOption('avif:codec', 'libaom-av1'); NOT WORKING
                         //$image->setOption('avif:quality', '50'); NOT WORKING
 
-                        $image->setCompressionQuality($quality);
+                        $image->setCompressionQuality( $quality );
                         $rawdata = $image->getImageBlob(); 
                         $image->clear();
 
                         self::setPersistentData( $filepath, $rawdata );
                     }
+
+                    $callback( (string) $rawdata, (int) $realWidth, (int) $realHeight );
                 }
             }
-
-            return (string) $rawdata;
         }
 
 
