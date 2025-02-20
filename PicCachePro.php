@@ -4,21 +4,40 @@
 	class PicCachePro { // PicCachePro::xxx();
 
 
-		// Write some content to an .raw file.
+		// Protected methods and properties for late static binding.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		public static function setPersistentData( string $filepath, string $rawdata ) : bool {
+		// Returns the full file path for a persistent file.
+		protected static function protectedHookPath( string $filename ) : string {
 
-			if( !file_exists( $filepath ) ) {
+			return (string) __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $filename;
+		}
 
-				if( pathinfo( $filepath )['extension'] === 'raw' ) {
 
-					if( file_put_contents( $filepath, $rawdata, LOCK_EX ) !== false ) {
+		// Returns the default file extension for persistent storage.
+		protected static function protectedHookExtension() : string {
 
-						if( file_exists( $filepath ) ) {
+			return (string) 'raw';
+		}
 
-							return (bool) true;
-						}
+
+
+
+
+		// Write data to a persistent file. The file extension must match the one defined in protectedHookExtension.
+		// -----------------------------------------------------------------------------------------------------------------------------
+
+		public static function setPersistentData( string $filename, string $filecontent ) : bool {
+
+			$filepath = static::protectedHookPath( $filename );
+
+			if( pathinfo( $filepath, PATHINFO_EXTENSION ) === static::protectedHookExtension() ) {
+
+				if( file_put_contents( $filepath, $filecontent, LOCK_EX ) !== false ) {
+
+					if( file_exists( $filepath ) ) {
+
+						return (bool) true;
 					}
 				}
 			}
@@ -30,16 +49,20 @@
 
 
 
-		// Read some content from an .raw file.
+		// Read data from a persistent file. The file extension must match the one defined in protectedHookExtension.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		public static function getPersistentData( string $filepath ) : string {
+		public static function getPersistentData( string $filename ) : string {
 
-			if( file_exists( $filepath ) ) {
+			$filepath = static::protectedHookPath( $filename );
 
-				if( pathinfo( $filepath )['extension'] === 'raw' ) {
+			if( pathinfo( $filepath, PATHINFO_EXTENSION ) === static::protectedHookExtension() && file_exists( $filepath ) ) {
 
-					return (string) file_get_contents( $filepath );
+				$content = file_get_contents( $filepath );
+
+				if( !empty( $content ) ) {
+
+					return (string) $content;
 				}
 			}
 
@@ -91,12 +114,12 @@
 					if( $quality < 1 || $quality > 100 ) $quality = 30;
 
 					// Generate cache file path based on input parameters.
-					$filepath = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . hash( 'sha3-512', $picturePath . strval( $quality ) . strval( $realWidth ) ) . '.raw';
+					$filename = hash( 'sha3-512', $picturePath . strval( $quality ) . strval( $realWidth ) ) . '.' . static::protectedHookExtension();
 
 					// Check if cached data already exists.
-					$rawdata  = self::getPersistentData( $filepath );
+					$filecontent = static::getPersistentData( $filename );
 
-					if( empty( $rawdata ) ) {
+					if( empty( $filecontent ) ) {
 
 						// Load the image.
 						$image->readImage( $picturePath );
@@ -113,15 +136,15 @@
 						//$image->setOption('avif:codec', 'libaom-av1'); NOT WORKING
 						//$image->setOption('avif:quality', '50'); NOT WORKING
 						$image->setCompressionQuality( $quality );
-						$rawdata = $image->getImageBlob(); 
+						$filecontent = $image->getImageBlob(); 
 						$image->clear();
 
 						// Store the processed image in cache.
-						self::setPersistentData( $filepath, $rawdata );
+						static::setPersistentData( $filename, $filecontent );
 					}
 
 					// Execute the callback function with the generated AVIF data and final image dimensions.
-					$callback( (string) $rawdata, (int) $realWidth, (int) $realHeight );
+					$callback( (string) $filecontent, (int) $realWidth, (int) $realHeight );
 				}
 			}
 		}
