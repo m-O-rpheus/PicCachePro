@@ -10,14 +10,28 @@
 		// Returns the full file path for a persistent file.
 		protected static function protectedHookPath( string $filename ) : string {
 
-			return (string) __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $filename;
+			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $filename;
 		}
 
 
 		// Returns the default file extension for persistent storage.
 		protected static function protectedHookExtension() : string {
 
-			return (string) 'raw';
+			return 'raw';
+		}
+
+
+		// Hook for setting content before writing to the file.
+		protected static function protectedHookContentSet( string $filecontent ) : string {
+
+			return $filecontent; // Can be extended for further processing.
+		}
+
+
+		// Hook for getting content after reading from the file.
+		protected static function protectedHookContentGet( string $filecontent ) : string {
+
+			return $filecontent; // Can be extended for further processing.
 		}
 
 
@@ -33,16 +47,16 @@
 
 			if( pathinfo( $filepath, PATHINFO_EXTENSION ) === static::protectedHookExtension() ) {
 
-				if( file_put_contents( $filepath, $filecontent, LOCK_EX ) !== false ) {
+				if( file_put_contents( $filepath, static::protectedHookContentSet( $filecontent ), LOCK_EX ) !== false ) {
 
 					if( file_exists( $filepath ) ) {
 
-						return (bool) true;
+						return true;
 					}
 				}
 			}
 
-			return (bool) false;
+			return false;
 		}
 
 
@@ -58,15 +72,15 @@
 
 			if( pathinfo( $filepath, PATHINFO_EXTENSION ) === static::protectedHookExtension() && file_exists( $filepath ) ) {
 
-				$content = file_get_contents( $filepath );
+				$filecontent = file_get_contents( $filepath );
 
-				if( !empty( $content ) ) {
+				if( !empty( $filecontent ) ) {
 
-					return (string) $content;
+					return static::protectedHookContentGet( $filecontent );
 				}
 			}
 
-			return (string) '';
+			return '';
 		}
 
 
