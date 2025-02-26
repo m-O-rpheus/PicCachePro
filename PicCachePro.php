@@ -7,17 +7,17 @@
 		// Protected methods and properties for late static binding.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		// Returns the full file path for a persistent file.
-		protected static function protectedHookPath( string $filename ) : string {
-
-			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $filename;
-		}
-
-
 		// Returns the default file extension for persistent storage.
 		protected static function protectedHookExtension() : string {
 
-			return 'raw';
+			return 'raw'; // Can be extended for further processing.
+		}
+
+
+		// Returns the full file path for a persistent file.
+		protected static function protectedHookPath( string $fileslug ) : string {
+
+			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $fileslug . '.' . static::protectedHookExtension(); // Can be extended for further processing.
 		}
 
 
@@ -38,20 +38,28 @@
 
 
 
-		// Write data to a persistent file. The file extension must match the one defined in protectedHookExtension.
+		// Methods for writing and reading data from a persistent file. The logic ensures that the file content can never be empty.
+		// The fileslug parameter is only a part of the file path without the extension.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		public static function setPersistentData( string $filename, string $filecontent ) : bool {
+		// Write data.
+		public static function setPersistentData( string $fileslug, string $filecontent ) : bool {
 
-			$filepath = static::protectedHookPath( $filename );
+			$fileslug = preg_replace( '/[^a-zA-Z0-9-_]/', '', $fileslug ); // Only allow a-z A-Z 0-9 - _
 
-			if( pathinfo( $filepath, PATHINFO_EXTENSION ) === static::protectedHookExtension() ) {
+			if( !empty( $fileslug ) ) {
 
-				if( file_put_contents( $filepath, static::protectedHookContentSet( $filecontent ), LOCK_EX ) !== false ) {
+				$fileslug    = static::protectedHookPath( $fileslug );
+				$filecontent = static::protectedHookContentSet( $filecontent );
 
-					if( file_exists( $filepath ) ) {
+				if( pathinfo( $fileslug, PATHINFO_EXTENSION ) === static::protectedHookExtension() && !empty( $filecontent ) ) {
 
-						return true;
+					if( file_put_contents( $fileslug, $filecontent, LOCK_EX ) !== false ) {
+
+						if( file_exists( $fileslug ) && is_file( $fileslug ) ) {
+
+							return true;
+						}
 					}
 				}
 			}
@@ -60,23 +68,23 @@
 		}
 
 
+		// Read data.
+		public static function getPersistentData( string $fileslug ) : string {
 
+			$fileslug = preg_replace( '/[^a-zA-Z0-9-_]/', '', $fileslug ); // Only allow a-z A-Z 0-9 - _
 
+			if( !empty( $fileslug ) ) {
 
-		// Read data from a persistent file. The file extension must match the one defined in protectedHookExtension.
-		// -----------------------------------------------------------------------------------------------------------------------------
+				$fileslug = static::protectedHookPath( $fileslug );
 
-		public static function getPersistentData( string $filename ) : string {
+				if( pathinfo( $fileslug, PATHINFO_EXTENSION ) === static::protectedHookExtension() && file_exists( $fileslug ) && is_file( $fileslug ) ) {
 
-			$filepath = static::protectedHookPath( $filename );
+					$filecontent = file_get_contents( $fileslug );
 
-			if( pathinfo( $filepath, PATHINFO_EXTENSION ) === static::protectedHookExtension() && file_exists( $filepath ) ) {
+					if( !empty( $filecontent ) ) {
 
-				$filecontent = file_get_contents( $filepath );
-
-				if( !empty( $filecontent ) ) {
-
-					return static::protectedHookContentGet( $filecontent );
+						return static::protectedHookContentGet( $filecontent );
+					}
 				}
 			}
 
@@ -98,7 +106,7 @@
 
 		public static function avifCreateRawFromPath( string $picturePath, int $quality = 0, int $targetWidth = 0, callable $callback ) : void {
 
-			if( !empty( $picturePath ) && file_exists( $picturePath ) && extension_loaded( 'imagick' ) === true ) {
+			if( !empty( $picturePath ) && file_exists( $picturePath ) && is_file( $picturePath ) && extension_loaded( 'imagick' ) === true ) {
 
 				$image = new Imagick();
 				$size  = getimagesize( $picturePath );
@@ -127,11 +135,11 @@
 					// Ensure quality is within valid range (defaulting to 30 if not set properly).
 					if( $quality < 1 || $quality > 100 ) $quality = 30;
 
-					// Generate cache file path based on input parameters.
-					$filename = hash( 'sha3-512', $picturePath . strval( $quality ) . strval( $realWidth ) ) . '.' . static::protectedHookExtension();
+					// Generate picture cache file slug based on input parameters.
+					$fileslug = 'picturecache__' . hash( 'sha3-384', $picturePath . strval( $quality ) . strval( $realWidth ) . strval( $realHeight ) );
 
 					// Check if cached data already exists.
-					$filecontent = static::getPersistentData( $filename );
+					$filecontent = static::getPersistentData( $fileslug );
 
 					if( empty( $filecontent ) ) {
 
@@ -154,7 +162,7 @@
 						$image->clear();
 
 						// Store the processed image in cache.
-						static::setPersistentData( $filename, $filecontent );
+						static::setPersistentData( $fileslug, $filecontent );
 					}
 
 					// Execute the callback function with the generated AVIF data and final image dimensions.

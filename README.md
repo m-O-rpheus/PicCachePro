@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 0.99
+### Version 1.0
 
 ---
 
@@ -11,6 +11,9 @@ Als Zielbreite wird entweder die Quellbreite verwendet oder, falls du eine ander
 Um die Leistung zu optimieren, wird ein zusätzlicher AVIF-Cache verwendet. Vor der Erstellung des AVIF-Bildes überprüft das Framework, ob bereits ein Bild mit den angegebenen Parametern im Cache vorhanden ist. Falls ja, wird das AVIF-Bild aus dem Cache verwendet. Andernfalls wird das AVIF-Bild neu erstellt und anschließend im Cache gespeichert, um den Zugriff bei zukünftigen Anfragen zu beschleunigen.
 
 ---
+
+#### Version 1.0:
+- Optimized code quality.
 
 #### Version 0.99:
 - Optimized code quality.
