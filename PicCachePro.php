@@ -7,17 +7,10 @@
 		// Protected methods and properties for late static binding.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		// Returns the default file extension for persistent storage.
-		protected static function protectedHookExtension() : string {
-
-			return 'raw'; // Can be extended for further processing.
-		}
-
-
 		// Returns the full file path for a persistent file.
 		protected static function protectedHookPath( string $fileslug ) : string {
 
-			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $fileslug . '.' . static::protectedHookExtension(); // Can be extended for further processing.
+			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $fileslug . '.raw'; // Can be extended for further processing.
 		}
 
 
@@ -52,14 +45,11 @@
 				$fileslug    = static::protectedHookPath( $fileslug );
 				$filecontent = static::protectedHookContentSet( $filecontent );
 
-				if( pathinfo( $fileslug, PATHINFO_EXTENSION ) === static::protectedHookExtension() && !empty( $filecontent ) ) {
+				if( !empty( $filecontent ) ) {
 
 					if( file_put_contents( $fileslug, $filecontent, LOCK_EX ) !== false ) {
 
-						if( file_exists( $fileslug ) && is_file( $fileslug ) ) {
-
-							return true;
-						}
+						return true;
 					}
 				}
 			}
@@ -77,7 +67,7 @@
 
 				$fileslug = static::protectedHookPath( $fileslug );
 
-				if( pathinfo( $fileslug, PATHINFO_EXTENSION ) === static::protectedHookExtension() && file_exists( $fileslug ) && is_file( $fileslug ) ) {
+				if( file_exists( $fileslug ) && is_file( $fileslug ) ) {
 
 					$filecontent = file_get_contents( $fileslug );
 
