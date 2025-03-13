@@ -12,6 +12,13 @@ Um die Leistung zu optimieren, wird ein zusätzlicher AVIF-Cache verwendet. Vor 
 
 ---
 
+### Low-level framework without dependencies:
+```
+PicCachePro-main
+```
+
+---
+
 #### Version 1.0.1:
 - Optimized code quality.
 
