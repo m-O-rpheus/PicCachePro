@@ -10,6 +10,7 @@
 		// Returns the full file path for a persistent file.
 		protected static function protectedHookPath( string $fileslug ) : string {
 
+			/** @var string */
 			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $fileslug . '.raw'; // Can be extended for further processing.
 		}
 
@@ -17,6 +18,7 @@
 		// Hook for setting content before writing to the file.
 		protected static function protectedHookContentSet( string $filecontent ) : string {
 
+			/** @var string */
 			return $filecontent; // Can be extended for further processing.
 		}
 
@@ -24,6 +26,7 @@
 		// Hook for getting content after reading from the file.
 		protected static function protectedHookContentGet( string $filecontent ) : string {
 
+			/** @var string */
 			return $filecontent; // Can be extended for further processing.
 		}
 
@@ -38,6 +41,7 @@
 		// Write data.
 		public static function setPersistentData( string $fileslug, string $filecontent ) : bool {
 
+			$fnResult = false; 
 			$fileslug = preg_replace( '/[^a-zA-Z0-9-_]/', '', $fileslug ); // Only allow a-z A-Z 0-9 - _
 
 			if( !empty( $fileslug ) ) {
@@ -49,18 +53,20 @@
 
 					if( file_put_contents( $fileslug, $filecontent, LOCK_EX ) !== false ) {
 
-						return true;
+						$fnResult = true; 
 					}
 				}
 			}
 
-			return false;
+			/** @var bool */
+			return $fnResult;
 		}
 
 
 		// Read data.
 		public static function getPersistentData( string $fileslug ) : string {
 
+			$fnResult = ''; 
 			$fileslug = preg_replace( '/[^a-zA-Z0-9-_]/', '', $fileslug ); // Only allow a-z A-Z 0-9 - _
 
 			if( !empty( $fileslug ) ) {
@@ -73,12 +79,13 @@
 
 					if( !empty( $filecontent ) ) {
 
-						return static::protectedHookContentGet( $filecontent );
+						$fnResult = static::protectedHookContentGet( $filecontent );
 					}
 				}
 			}
 
-			return '';
+			/** @var string */
+			return $fnResult;
 		}
 
 
@@ -155,8 +162,8 @@
 						static::setPersistentData( $fileslug, $filecontent );
 					}
 
-					// Execute the callback function with the generated AVIF data and final image dimensions.
-					$callback( (string) $filecontent, (int) $realWidth, (int) $realHeight );
+					/** @param callable(string, int, int) $callback */
+					$callback( $filecontent, $realWidth, $realHeight ); // Execute the callback function with the generated AVIF data and final image dimensions.
 				}
 			}
 		}
