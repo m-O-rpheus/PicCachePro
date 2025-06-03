@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 1.0.2
+### Version 1.0.3
 
 ---
 
@@ -18,6 +18,10 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 1.0.3:
+- Renaming variables and methods.
+- File methods can also work with empty content.
 
 #### Version 1.0.2:
 - Optimized code quality.

@@ -8,15 +8,15 @@
 		// -----------------------------------------------------------------------------------------------------------------------------
 
 		// Returns the full file path for a persistent file.
-		protected static function protectedHookPath( string $fileslug ) : string {
+		protected static function protectedHookFilePath( string $filename ) : string {
 
 			/** @var string */
-			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $fileslug . '.raw'; // Can be extended for further processing.
+			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $filename . '.raw'; // Can be extended for further processing.
 		}
 
 
 		// Hook for setting content before writing to the file.
-		protected static function protectedHookContentSet( string $filecontent ) : string {
+		protected static function protectedHookBeforeWrite( string $filecontent ) : string {
 
 			/** @var string */
 			return $filecontent; // Can be extended for further processing.
@@ -24,7 +24,7 @@
 
 
 		// Hook for getting content after reading from the file.
-		protected static function protectedHookContentGet( string $filecontent ) : string {
+		protected static function protectedHookAfterRead( string $filecontent ) : string {
 
 			/** @var string */
 			return $filecontent; // Can be extended for further processing.
@@ -34,27 +34,23 @@
 
 
 
-		// Methods for writing and reading data from a persistent file. The logic ensures that the file content can never be empty.
-		// The fileslug parameter is only a part of the file path without the extension.
+		// Write and read string data to/from files with filenames sanitized to allow only letters, numbers, dash, and underscore.
+		// Applies hooks to process content before writing and after reading.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		// Write data.
-		public static function setPersistentData( string $fileslug, string $filecontent ) : bool {
+		public static function writePersistentData( string $filename, string $filecontent ) : bool {
 
 			$fnResult = false; 
-			$fileslug = preg_replace( '/[^a-zA-Z0-9-_]/', '', $fileslug ); // Only allow a-z A-Z 0-9 - _
+			$filename = preg_replace( '/[^a-zA-Z0-9-_]/', '', $filename ); // Only allow a-z A-Z 0-9 - _
 
-			if( !empty( $fileslug ) ) {
+			if( !empty( $filename ) ) {
 
-				$fileslug    = static::protectedHookPath( $fileslug );
-				$filecontent = static::protectedHookContentSet( $filecontent );
+				$filename    = static::protectedHookFilePath( $filename ); // Override variable filename with full file path, including filename.
+				$filecontent = static::protectedHookBeforeWrite( $filecontent );
 
-				if( !empty( $filecontent ) ) {
+				if( file_put_contents( $filename, $filecontent, LOCK_EX ) !== false ) {
 
-					if( file_put_contents( $fileslug, $filecontent, LOCK_EX ) !== false ) {
-
-						$fnResult = true; 
-					}
+					$fnResult = true; 
 				}
 			}
 
@@ -63,23 +59,22 @@
 		}
 
 
-		// Read data.
-		public static function getPersistentData( string $fileslug ) : string {
+		public static function readPersistentData( string $filename ) : string {
 
 			$fnResult = ''; 
-			$fileslug = preg_replace( '/[^a-zA-Z0-9-_]/', '', $fileslug ); // Only allow a-z A-Z 0-9 - _
+			$filename = preg_replace( '/[^a-zA-Z0-9-_]/', '', $filename ); // Only allow a-z A-Z 0-9 - _
 
-			if( !empty( $fileslug ) ) {
+			if( !empty( $filename ) ) {
 
-				$fileslug = static::protectedHookPath( $fileslug );
+				$filename = static::protectedHookFilePath( $filename ); // Override variable filename with full file path, including filename.
 
-				if( file_exists( $fileslug ) && is_file( $fileslug ) ) {
+				if( file_exists( $filename ) && is_file( $filename ) ) {
 
-					$filecontent = file_get_contents( $fileslug );
+					$filecontent = file_get_contents( $filename );
 
-					if( !empty( $filecontent ) ) {
+					if( $filecontent !== false ) {
 
-						$fnResult = static::protectedHookContentGet( $filecontent );
+						$fnResult = static::protectedHookAfterRead( $filecontent );
 					}
 				}
 			}
@@ -133,10 +128,10 @@
 					if( $quality < 1 || $quality > 100 ) $quality = 30;
 
 					// Generate picture cache file slug based on input parameters.
-					$fileslug = 'picturecache__' . hash( 'sha3-384', $picturePath . strval( $quality ) . strval( $realWidth ) . strval( $realHeight ) );
+					$filename = 'picturecache__' . hash( 'sha3-384', $picturePath . strval( $quality ) . strval( $realWidth ) . strval( $realHeight ) );
 
 					// Check if cached data already exists.
-					$filecontent = static::getPersistentData( $fileslug );
+					$filecontent = static::readPersistentData( $filename );
 
 					if( empty( $filecontent ) ) {
 
@@ -159,7 +154,7 @@
 						$image->clear();
 
 						// Store the processed image in cache.
-						static::setPersistentData( $fileslug, $filecontent );
+						static::writePersistentData( $filename, $filecontent );
 					}
 
 					/** @param callable(string, int, int) $callback */
