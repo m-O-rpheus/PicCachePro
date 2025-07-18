@@ -7,15 +7,22 @@
 		// Protected methods and properties for late static binding.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		// Returns the full file path for a persistent file.
-		protected static function protectedHookFilePath( string $filename ) : string {
+		// Returns the base path for data storage. By default, the "_cache_chmod777" directory is used.
+		protected static function protectedHookBasePath() : string {
 
 			/** @var string */
-			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . $filename . '.raw'; // Can be extended for further processing.
+			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777'; // Can be extended for further processing.
+		}
+
+		// Returns the full file path, which includes the base path, filename, and extension.
+		protected static function protectedHookFullPath( string $fullpath ) : string {
+
+			/** @var string */
+			return $fullpath; // Can be extended for further processing.
 		}
 
 
-		// Hook for setting content before writing to the file.
+		// Allows processing of content before writing it to the file.
 		protected static function protectedHookBeforeWrite( string $filecontent ) : string {
 
 			/** @var string */
@@ -23,11 +30,50 @@
 		}
 
 
-		// Hook for getting content after reading from the file.
+		// Allows processing of content after reading it from the file.
 		protected static function protectedHookAfterRead( string $filecontent ) : string {
 
 			/** @var string */
 			return $filecontent; // Can be extended for further processing.
+		}
+
+
+
+
+
+		// Sanitizes a string by stripping out any characters that are not explicitly allowed. The specific set of allowed characters depends on the individual method.
+		// -----------------------------------------------------------------------------------------------------------------------------
+
+		// Allows only letters (a-z, A-Z), digits (0-9), dash (-), and underscore (_).
+		public static function sanitizeAlphaNumDashUnderscore( string $str ) : string {
+
+			/** @var string */
+			return preg_replace( '/[^a-zA-Z0-9-_]/', '', $str );
+		}
+
+
+		// Allows only letters (a-z, A-Z) and digits (0-9).
+		public static function sanitizeAlphaNum( string $str ) : string {
+
+			/** @var string */
+			return preg_replace( '/[^a-zA-Z0-9]/', '', $str );
+		}
+
+
+
+
+
+		// Generates a full file path consisting of the base path, filename, and extension. The path can be customized in the future by overriding the "protectedHook*" methods in subclasses.
+		// -----------------------------------------------------------------------------------------------------------------------------
+
+		public static function generateFullPath( string $filename, string $extension ) : string {
+
+			$basepath  = static::protectedHookBasePath();
+			$filename  = static::sanitizeAlphaNumDashUnderscore( $filename );
+			$extension = static::sanitizeAlphaNum( $extension );
+
+			/** @var string */
+			return static::protectedHookFullPath( rtrim( $basepath, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . $filename . '.' . $extension );
 		}
 
 
@@ -40,15 +86,14 @@
 
 		public static function writePersistentData( string $filename, string $filecontent ) : bool {
 
-			$fnResult = false; 
-			$filename = preg_replace( '/[^a-zA-Z0-9-_]/', '', $filename ); // Only allow a-z A-Z 0-9 - _
+			$fnResult = false;
+			$fullpath = static::generateFullPath( $filename, 'raw' );
 
-			if( !empty( $filename ) ) {
+			if( !empty( $fullpath ) && is_dir( dirname( $fullpath ) ) && is_writable( dirname( $fullpath ) ) ) {
 
-				$filename    = static::protectedHookFilePath( $filename ); // Override variable filename with full file path, including filename.
 				$filecontent = static::protectedHookBeforeWrite( $filecontent );
 
-				if( file_put_contents( $filename, $filecontent, LOCK_EX ) !== false ) {
+				if( file_put_contents( $fullpath, $filecontent, LOCK_EX ) !== false ) {
 
 					$fnResult = true; 
 				}
@@ -62,20 +107,13 @@
 		public static function readPersistentData( string $filename ) : string {
 
 			$fnResult = ''; 
-			$filename = preg_replace( '/[^a-zA-Z0-9-_]/', '', $filename ); // Only allow a-z A-Z 0-9 - _
+			$fullpath = static::generateFullPath( $filename, 'raw' );
 
-			if( !empty( $filename ) ) {
+			if( !empty( $fullpath ) && file_exists( $fullpath ) && is_file( $fullpath ) && is_readable( $fullpath ) ) {
 
-				$filename = static::protectedHookFilePath( $filename ); // Override variable filename with full file path, including filename.
+				if( ( $filecontent = file_get_contents( $fullpath ) ) !== false ) {
 
-				if( file_exists( $filename ) && is_file( $filename ) ) {
-
-					$filecontent = file_get_contents( $filename );
-
-					if( $filecontent !== false ) {
-
-						$fnResult = static::protectedHookAfterRead( $filecontent );
-					}
+					$fnResult = static::protectedHookAfterRead( $filecontent );
 				}
 			}
 

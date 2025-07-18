@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 1.0.3
+### Version 1.0.4
 
 ---
 
@@ -18,6 +18,11 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 1.0.4:
+- Optimized code for better performance and readability
+- Added extended file and data validation
+- Implemented enhanced support for class extensions
 
 #### Version 1.0.3:
 - Renaming variables and methods.
