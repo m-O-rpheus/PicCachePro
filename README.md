@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 1.0.4
+### Version 1.0.5
 
 ---
 
@@ -18,6 +18,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 1.0.5:
+- Optimize Code.
 
 #### Version 1.0.4:
 - Optimized code for better performance and readability

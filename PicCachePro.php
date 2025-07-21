@@ -41,19 +41,19 @@
 
 
 
-		// Sanitizes a string by stripping out any characters that are not explicitly allowed. The specific set of allowed characters depends on the individual method.
+		// Cleans a string by removing characters not permitted by the following method(s).
 		// -----------------------------------------------------------------------------------------------------------------------------
 
 		// Allows only letters (a-z, A-Z), digits (0-9), dash (-), and underscore (_).
-		public static function sanitizeAlphaNumDashUnderscore( string $str ) : string {
+		final public static function sanitizeAlphaNumDashUnderscore( string $str ) : string {
 
 			/** @var string */
-			return preg_replace( '/[^a-zA-Z0-9-_]/', '', $str );
+			return preg_replace( '/[^a-zA-Z0-9\-_]/', '', $str );
 		}
 
 
 		// Allows only letters (a-z, A-Z) and digits (0-9).
-		public static function sanitizeAlphaNum( string $str ) : string {
+		final public static function sanitizeAlphaNum( string $str ) : string {
 
 			/** @var string */
 			return preg_replace( '/[^a-zA-Z0-9]/', '', $str );
@@ -66,7 +66,7 @@
 		// Generates a full file path consisting of the base path, filename, and extension. The path can be customized in the future by overriding the "protectedHook*" methods in subclasses.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		public static function generateFullPath( string $filename, string $extension ) : string {
+		final public static function generateFullPath( string $filename, string $extension ) : string {
 
 			$basepath  = static::protectedHookBasePath();
 			$filename  = static::sanitizeAlphaNumDashUnderscore( $filename );
@@ -84,7 +84,7 @@
 		// Applies hooks to process content before writing and after reading.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		public static function writePersistentData( string $filename, string $filecontent ) : bool {
+		final public static function writePersistentData( string $filename, string $filecontent ) : bool {
 
 			$fnResult = false;
 			$fullpath = static::generateFullPath( $filename, 'raw' );
@@ -104,7 +104,7 @@
 		}
 
 
-		public static function readPersistentData( string $filename ) : string {
+		final public static function readPersistentData( string $filename ) : string {
 
 			$fnResult = ''; 
 			$fullpath = static::generateFullPath( $filename, 'raw' );
@@ -134,7 +134,7 @@
 		// The method stores a cached version of the processed image to improve performance on repeated calls.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		public static function avifCreateRawFromPath( string $picturePath, int $quality = 0, int $targetWidth = 0, callable $callback ) : void {
+		final public static function avifCreateRawFromPath( string $picturePath, int $quality = 0, int $targetWidth = 0, callable $callback ) : void {
 
 			if( !empty( $picturePath ) && file_exists( $picturePath ) && is_file( $picturePath ) && extension_loaded( 'imagick' ) === true ) {
 
