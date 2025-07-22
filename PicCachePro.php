@@ -69,8 +69,8 @@
 		final public static function generateFullPath( string $filename, string $extension ) : string {
 
 			$basepath  = static::protectedHookBasePath();
-			$filename  = static::sanitizeAlphaNumDashUnderscore( $filename );
-			$extension = static::sanitizeAlphaNum( $extension );
+			$filename  = self::sanitizeAlphaNumDashUnderscore( $filename );
+			$extension = self::sanitizeAlphaNum( $extension );
 
 			/** @var string */
 			return static::protectedHookFullPath( rtrim( $basepath, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . $filename . '.' . $extension );
@@ -87,7 +87,7 @@
 		final public static function writePersistentData( string $filename, string $filecontent ) : bool {
 
 			$fnResult = false;
-			$fullpath = static::generateFullPath( $filename, 'raw' );
+			$fullpath = self::generateFullPath( $filename, 'raw' );
 
 			if( !empty( $fullpath ) && is_dir( dirname( $fullpath ) ) && is_writable( dirname( $fullpath ) ) ) {
 
@@ -107,7 +107,7 @@
 		final public static function readPersistentData( string $filename ) : string {
 
 			$fnResult = ''; 
-			$fullpath = static::generateFullPath( $filename, 'raw' );
+			$fullpath = self::generateFullPath( $filename, 'raw' );
 
 			if( !empty( $fullpath ) && file_exists( $fullpath ) && is_file( $fullpath ) && is_readable( $fullpath ) ) {
 
@@ -169,7 +169,7 @@
 					$filename = 'picturecache__' . hash( 'sha3-384', $picturePath . strval( $quality ) . strval( $realWidth ) . strval( $realHeight ) );
 
 					// Check if cached data already exists.
-					$filecontent = static::readPersistentData( $filename );
+					$filecontent = self::readPersistentData( $filename );
 
 					if( empty( $filecontent ) ) {
 
@@ -192,7 +192,7 @@
 						$image->clear();
 
 						// Store the processed image in cache.
-						static::writePersistentData( $filename, $filecontent );
+						self::writePersistentData( $filename, $filecontent );
 					}
 
 					/** @param callable(string, int, int) $callback */
