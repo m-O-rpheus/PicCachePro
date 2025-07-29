@@ -87,15 +87,19 @@
 		final public static function writePersistentData( string $filename, string $filecontent ) : bool {
 
 			$fnResult = false;
-			$fullpath = self::generateFullPath( $filename, 'raw' );
 
-			if( !empty( $fullpath ) && is_dir( dirname( $fullpath ) ) && is_writable( dirname( $fullpath ) ) ) {
+			if( !empty( $filename ) ) {
 
-				$filecontent = static::protectedHookBeforeWrite( $filecontent );
+				$fullpath = self::generateFullPath( $filename, 'raw' );
 
-				if( file_put_contents( $fullpath, $filecontent, LOCK_EX ) !== false ) {
+				if( !empty( $fullpath ) && is_dir( dirname( $fullpath ) ) && is_writable( dirname( $fullpath ) ) ) {
 
-					$fnResult = true; 
+					$filecontent = static::protectedHookBeforeWrite( $filecontent );
+
+					if( file_put_contents( $fullpath, $filecontent, LOCK_EX ) !== false ) {
+
+						$fnResult = true; 
+					}
 				}
 			}
 
@@ -106,14 +110,18 @@
 
 		final public static function readPersistentData( string $filename ) : string {
 
-			$fnResult = ''; 
-			$fullpath = self::generateFullPath( $filename, 'raw' );
+			$fnResult = '';
 
-			if( !empty( $fullpath ) && file_exists( $fullpath ) && is_file( $fullpath ) && is_readable( $fullpath ) ) {
+			if( !empty( $filename ) ) {
 
-				if( ( $filecontent = file_get_contents( $fullpath ) ) !== false ) {
+				$fullpath = self::generateFullPath( $filename, 'raw' );
 
-					$fnResult = static::protectedHookAfterRead( $filecontent );
+				if( !empty( $fullpath ) && file_exists( $fullpath ) && is_file( $fullpath ) && is_readable( $fullpath ) ) {
+
+					if( ( $filecontent = file_get_contents( $fullpath ) ) !== false ) {
+
+						$fnResult = static::protectedHookAfterRead( $filecontent );
+					}
 				}
 			}
 
