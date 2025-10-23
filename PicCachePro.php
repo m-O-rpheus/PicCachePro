@@ -4,209 +4,193 @@
 	class PicCachePro { // PicCachePro::xxx();
 
 
-		// Protected methods and properties for late static binding.
+		// Protected properties for late static binding.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		// Returns the base path for data storage. By default, the "_cache_chmod777" directory is used.
-		protected static function protectedHookBasePath() : string {
-
-			/** @var string */
-			return __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777'; // Can be extended for further processing.
-		}
-
-		// Returns the full file path, which includes the base path, filename, and extension.
-		protected static function protectedHookFullPath( string $fullpath ) : string {
-
-			/** @var string */
-			return $fullpath; // Can be extended for further processing.
-		}
-
-
-		// Allows processing of content before writing it to the file.
-		protected static function protectedHookBeforeWrite( string $filecontent ) : string {
-
-			/** @var string */
-			return $filecontent; // Can be extended for further processing.
-		}
-
-
-		// Allows processing of content after reading it from the file.
-		protected static function protectedHookAfterRead( string $filecontent ) : string {
-
-			/** @var string */
-			return $filecontent; // Can be extended for further processing.
-		}
+		protected static $DefaultQuality = 30; // 0-100
+		protected static $DefaultSpeed   = 4;  // 0-9
+		protected static $Multiplier     = 50;
+		protected static $CacheTable     = 'picturecache';
+		protected static $CachePath      = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . 'PicCachePro.sqlite3';
+		protected static $ToolkitSQLite3 = 'ToolkitSQLite3';
 
 
 
 
 
-		// Cleans a string by removing characters not permitted by the following method(s).
+		// Centralized exception handling helpers.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		// Allows only letters (a-z, A-Z), digits (0-9), dash (-), and underscore (_).
-		final public static function sanitizeAlphaNumDashUnderscore( string $str ) : string {
+		private static function throw_invalid_filepath() : void {
 
-			/** @var string */
-			return preg_replace( '/[^a-zA-Z0-9\-_]/', '', $str );
+			throw new InvalidArgumentException( 'PicCachePro: Invalid image file path or file does not exist.' );
 		}
 
 
-		// Allows only letters (a-z, A-Z) and digits (0-9).
-		final public static function sanitizeAlphaNum( string $str ) : string {
+		private static function throw_unsupported_format() : void {
 
-			/** @var string */
-			return preg_replace( '/[^a-zA-Z0-9]/', '', $str );
+			throw new InvalidArgumentException( 'PicCachePro: Invalid image format. Only JPEG and PNG files are supported.' );
 		}
 
 
+		private static function throw_imagick_missing() : void {
 
-
-
-		// Generates a full file path consisting of the base path, filename, and extension. The path can be customized in the future by overriding the "protectedHook*" methods in subclasses.
-		// -----------------------------------------------------------------------------------------------------------------------------
-
-		final public static function generateFullPath( string $filename, string $extension ) : string {
-
-			$basepath  = static::protectedHookBasePath();
-			$filename  = self::sanitizeAlphaNumDashUnderscore( $filename );
-			$extension = self::sanitizeAlphaNum( $extension );
-
-			/** @var string */
-			return static::protectedHookFullPath( rtrim( $basepath, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . $filename . '.' . $extension );
+			throw new InvalidArgumentException( 'PicCachePro: Imagick extension is missing or not enabled.' );
 		}
 
 
+		private static function throw_avif_not_supported() : void {
 
-
-
-		// Write and read string data to/from files with filenames sanitized to allow only letters, numbers, dash, and underscore.
-		// Applies hooks to process content before writing and after reading.
-		// -----------------------------------------------------------------------------------------------------------------------------
-
-		final public static function writePersistentData( string $filename, string $filecontent ) : bool {
-
-			$fnResult = false;
-
-			if( !empty( $filename ) ) {
-
-				$fullpath = self::generateFullPath( $filename, 'raw' );
-
-				if( !empty( $fullpath ) && is_dir( dirname( $fullpath ) ) && is_writable( dirname( $fullpath ) ) ) {
-
-					$filecontent = static::protectedHookBeforeWrite( $filecontent );
-
-					if( file_put_contents( $fullpath, $filecontent, LOCK_EX ) !== false ) {
-
-						$fnResult = true; 
-					}
-				}
-			}
-
-			/** @var bool */
-			return $fnResult;
+			throw new InvalidArgumentException( 'PicCachePro: AVIF format is not supported by this Imagick installation.' );
 		}
 
 
-		final public static function readPersistentData( string $filename ) : string {
+		private static function throw_database_connection_failed() : void {
 
-			$fnResult = '';
+			throw new InvalidArgumentException( 'PicCachePro: Database connection failed or could not be initialized.' );
+		}
 
-			if( !empty( $filename ) ) {
 
-				$fullpath = self::generateFullPath( $filename, 'raw' );
+		private static function throw_database_write_failed() : void {
 
-				if( !empty( $fullpath ) && file_exists( $fullpath ) && is_file( $fullpath ) && is_readable( $fullpath ) ) {
-
-					if( ( $filecontent = file_get_contents( $fullpath ) ) !== false ) {
-
-						$fnResult = static::protectedHookAfterRead( $filecontent );
-					}
-				}
-			}
-
-			/** @var string */
-			return $fnResult;
+			throw new InvalidArgumentException( 'PicCachePro: Failed to write AVIF image to cache database.' );
 		}
 
 
 
 
 
-		// Converts an image (JPG, PNG, or GIF) to AVIF format and returns the binary data.
+		// Converts an image to AVIF format and provides the generated binary data via a callback.
+		// A cached version of the processed image is stored in SQLite3 to avoid repeated AVIF conversions.
 		// Parameters:
-		// - $picturePath: Full path to the input image.
-		// - $quality: Compression quality (1-100). Lower values mean higher compression. Default is 30 if invalid or not set.
-		// - $targetWidth: Desired width of the output AVIF image. If 0 or equal to the source width, no resizing occurs.
-		// - $callback: Function to be called with the resulting image data.
-		// The method stores a cached version of the processed image to improve performance on repeated calls.
+		// - $picturePath: Absolute path to the source image.
+		// - $quality: AVIF compression quality from 0-100. Falls back to the default quality value if invalid.
+		// - $targetWidth: Optional target width. The image is resized proportionally if the target width is smaller than the source width.
+		// - $callback: Receives the generated AVIF binary data and final image dimensions.
+		// Supported image formats depend on the local Imagick installation.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		final public static function avifCreateRawFromPath( string $picturePath, int $quality = 0, int $targetWidth = 0, callable $callback ) : void {
+		final public static function avifCreateRawFromPath( string $picturePath, int $quality = -1, int $targetWidth = 0, callable $callback ) : void {
 
-			if( !empty( $picturePath ) && file_exists( $picturePath ) && is_file( $picturePath ) && extension_loaded( 'imagick' ) === true ) {
+			if( !empty( $picturePath ) && is_file( $picturePath ) ) {
 
-				$image = new Imagick();
-				$size  = getimagesize( $picturePath );
+				$mimeType = mime_content_type( $picturePath );
 
-				if( !empty( $image->queryFormats( 'AVIF' ) ) && !empty( $size ) ) {
+				if( $mimeType === 'image/jpeg' || $mimeType === 'image/png' ) {
 
-					$sourceWidth  = $size[0];
-					$sourceHeight = $size[1];
+					if( extension_loaded( 'imagick' ) === true ) {
 
-					// Determine the final image dimensions.
-					$realWidth  = $sourceWidth;
-					$realHeight = $sourceHeight;
+						$size = getimagesize( $picturePath );
 
-					if( $targetWidth > 0 ) {
+						if( in_array( 'AVIF', Imagick::queryFormats(), true ) && !empty( $size ) && is_array( $size ) && isset( $size[0], $size[1] ) ) {
 
-						// Round target width to the nearest 50 pixels for optimized storage.
-						$targetWidth = ceil( $targetWidth / 50 ) * 50;
+							$class = static::$ToolkitSQLite3;
+							$db = new $class( static::$CachePath, static::$CacheTable );
 
-						if( $targetWidth < $sourceWidth ) {
+							if( $db->table_add_ignore() && $db->columns_add_ignore( 'quality', 'speed', 'realWidth', 'realHeight', 'basename', 'sizeKB', 'binaryAvif' ) ) {
 
-							$realWidth  = $targetWidth;
-							$realHeight = ceil( $targetWidth / ( $sourceWidth / $sourceHeight ) );
+
+								// Calculate output dimensions based on source size and normalized target width.
+								$sourceWidth  = $size[0];
+								$sourceHeight = $size[1];
+
+								$realWidth  = $sourceWidth;
+								$realHeight = $sourceHeight;
+
+								if( $targetWidth > 0 ) {
+
+									$targetWidth = intval( ceil( $targetWidth / static::$Multiplier ) * static::$Multiplier );
+
+									if( $targetWidth < $sourceWidth ) {
+
+										$realWidth  = $targetWidth;
+										$realHeight = intval( ceil( $targetWidth / ( $sourceWidth / $sourceHeight ) ) );
+									}
+								}
+
+
+								// Fallback to the default quality if the value is outside the valid range.
+								if( $quality < 0 || $quality > 100 ) $quality = static::$DefaultQuality;
+
+
+								// Generate a unique cache key based on image content, quality, and target dimensions.
+								$hash = hash( 'xxh128', hash_file( 'xxh128', $picturePath, true ) . '|' . $quality . '|' . $realWidth . '|' . $realHeight );
+
+
+								// Create the SELECT statement to check whether the image already exists in the cache table.
+								$select = array(
+									'columns' => ['binaryAvif'],
+									'where' => [
+										'column' => '_slug',
+										'op'     => '=',
+										'value'  => $hash,
+									],
+									'limit' => 1,
+								);
+
+
+								// Return cached AVIF if available, otherwise generate and store it in cache.
+								if( !empty( $pictureCache = $db->select( $select ) ) ) {
+
+									$filecontent = $class::resource_to_string( array_shift( $pictureCache )['binaryAvif'] );
+
+									/** @param callable(string, int, int) $callback */
+									$callback( $filecontent, $realWidth, $realHeight );
+								}
+								else {
+
+									// Load the source image into Imagick.
+									$image = new Imagick();
+									$image->readImage( $picturePath );
+
+									// Resize the image proportionally if the calculated dimensions differ from the original image size.
+									if( $realWidth !== $sourceWidth ) {
+
+										$image->resizeImage( $realWidth, $realHeight, Imagick::FILTER_LANCZOS, 0.9, false );
+									}
+
+									// Prepare and encode the image as AVIF.
+									$image->stripImage();
+									$image->setImageFormat( 'avif' );
+									$image->setCompressionQuality( $quality );
+
+									// Lower speed levels improve compression efficiency but increase encoding time.
+									// This behavior is dependent on the underlying AVIF/HEIF library (e.g. libheif / ImageMagick build),
+									// and may not be consistently applied across all Imagick installations or encoders.
+									$image->setOption( 'heic:speed', static::$DefaultSpeed );
+									$image->setOption( 'heif:speed', static::$DefaultSpeed );
+
+									// Export the encoded AVIF image as binary data.
+									$filecontent = $image->getImageBlob(); 
+									$image->clear();
+									$image->destroy();
+
+									// Store the generated AVIF image in the cache database.
+									if( $db->row_upsert( $hash, array(
+										'quality'     => $quality,
+										'speed'       => static::$DefaultSpeed,
+										'realWidth'   => $realWidth,
+										'realHeight'  => $realHeight,
+										'basename'    => basename( $picturePath ),
+										'sizeKB'      => round( strlen( $filecontent ) / 1024, 2 ),
+										'binaryAvif'  => $class::string_to_resource( $filecontent ),
+									) ) ) {
+
+										/** @param callable(string, int, int) $callback */
+										$callback( $filecontent, $realWidth, $realHeight );
+									}
+									else self::throw_database_write_failed();
+								}
+							}
+							else self::throw_database_connection_failed();
 						}
+						else self::throw_avif_not_supported();
 					}
-
-					// Ensure quality is within valid range (defaulting to 30 if not set properly).
-					if( $quality < 1 || $quality > 100 ) $quality = 30;
-
-					// Generate picture cache file slug based on input parameters.
-					$filename = 'picturecache__' . hash( 'sha3-384', $picturePath . strval( $quality ) . strval( $realWidth ) . strval( $realHeight ) );
-
-					// Check if cached data already exists.
-					$filecontent = self::readPersistentData( $filename );
-
-					if( empty( $filecontent ) ) {
-
-						// Load the image.
-						$image->readImage( $picturePath );
-
-						// Resize if needed.
-						if( $realWidth !== $sourceWidth ) {
-
-							$image->resizeImage( $realWidth, $realHeight, Imagick::FILTER_LANCZOS, 1, false );
-						}
-
-						// Convert to AVIF format.
-						$image->setImageFormat( 'avif' );
-						//$image->setOption('avif:lossless', 'false'); NOT WORKING
-						//$image->setOption('avif:codec', 'libaom-av1'); NOT WORKING
-						//$image->setOption('avif:quality', '50'); NOT WORKING
-						$image->setCompressionQuality( $quality );
-						$filecontent = $image->getImageBlob(); 
-						$image->clear();
-
-						// Store the processed image in cache.
-						self::writePersistentData( $filename, $filecontent );
-					}
-
-					/** @param callable(string, int, int) $callback */
-					$callback( $filecontent, $realWidth, $realHeight ); // Execute the callback function with the generated AVIF data and final image dimensions.
+					else self::throw_imagick_missing();
 				}
+				else self::throw_unsupported_format();
 			}
+			else self::throw_invalid_filepath();
 		}
 
 
