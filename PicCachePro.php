@@ -1,18 +1,34 @@
 <?php
 
 
-	class PicCachePro { // PicCachePro::xxx();
+/*
+ * PicCachePro
+ *
+ * This repository is licensed under the MIT License.
+ * 
+ * Any use, copy, modification, or redistribution of this repository
+ * or any substantial portion of it must retain attribution to the
+ * original author and the original GitHub repository.
+ * 
+ * Copyright (c) 2026 Markus Jäger
+ * https://github.com/m-O-rpheus/PicCachePro
+ */
 
 
-		// Protected properties for late static binding.
+	class PicCachePro {
+
+
+		// Protected constants used for configuration and default settings.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		protected static $DefaultQuality = 30; // 0-100
-		protected static $DefaultSpeed   = 4;  // 0-9
-		protected static $Multiplier     = 50;
-		protected static $CacheTable     = 'picturecache';
-		protected static $CachePath      = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . 'PicCachePro.sqlite3';
-		protected static $ToolkitSQLite3 = 'ToolkitSQLite3';
+		protected const DEFAULT_QUALITY = 30;               // Default image quality level (0-100).
+		protected const DEFAULT_SPEED   = 4;                // Default AVIF encoding speed level (typically 0-9 depending on encoder support).
+		protected const MULTIPLIER      = 50;               // Scaling multiplier used for size calculations.
+		protected const RESIZE_BLUR     = 0.9;              // Blur parameter used during resizing: >1 increases blur, <1 reduces blur.
+		protected const HASH_ALGORITHM  = 'xxh128';         // Hash algorithm used for generating cache keys.
+		protected const TOOLKIT_SQLITE3 = 'ToolkitSQLite3'; // Name of the SQLite3 toolkit class used internally.
+		protected const CACHE_TABLE     = 'picturecache';   // Name of the database table used for cached images.
+		protected const CACHE_PATH      = __DIR__ . DIRECTORY_SEPARATOR . '_cache_chmod777' . DIRECTORY_SEPARATOR . 'PicCachePro.sqlite3'; // SQLite3 cache database path.
 
 
 
@@ -84,8 +100,8 @@
 
 						if( in_array( 'AVIF', Imagick::queryFormats(), true ) && !empty( $size ) && is_array( $size ) && isset( $size[0], $size[1] ) ) {
 
-							$class = static::$ToolkitSQLite3;
-							$db = new $class( static::$CachePath, static::$CacheTable );
+							$class = static::TOOLKIT_SQLITE3;
+							$db = new $class( static::CACHE_PATH, static::CACHE_TABLE );
 
 							if( $db->table_add_ignore() && $db->columns_add_ignore( 'quality', 'speed', 'realWidth', 'realHeight', 'basename', 'sizeKB', 'binaryAvif' ) ) {
 
@@ -99,7 +115,7 @@
 
 								if( $targetWidth > 0 ) {
 
-									$targetWidth = intval( ceil( $targetWidth / static::$Multiplier ) * static::$Multiplier );
+									$targetWidth = intval( ceil( $targetWidth / static::MULTIPLIER ) * static::MULTIPLIER );
 
 									if( $targetWidth < $sourceWidth ) {
 
@@ -110,11 +126,11 @@
 
 
 								// Fallback to the default quality if the value is outside the valid range.
-								if( $quality < 0 || $quality > 100 ) $quality = static::$DefaultQuality;
+								if( $quality < 0 || $quality > 100 ) $quality = static::DEFAULT_QUALITY;
 
 
 								// Generate a unique cache key based on image content, quality, and target dimensions.
-								$hash = hash( 'xxh128', hash_file( 'xxh128', $picturePath, true ) . '|' . $quality . '|' . $realWidth . '|' . $realHeight );
+								$hash = hash( static::HASH_ALGORITHM, hash_file( static::HASH_ALGORITHM, $picturePath, true ) . '|' . $quality . '|' . $realWidth . '|' . $realHeight );
 
 
 								// Create the SELECT statement to check whether the image already exists in the cache table.
@@ -146,7 +162,7 @@
 									// Resize the image proportionally if the calculated dimensions differ from the original image size.
 									if( $realWidth !== $sourceWidth ) {
 
-										$image->resizeImage( $realWidth, $realHeight, Imagick::FILTER_LANCZOS, 0.9, false );
+										$image->resizeImage( $realWidth, $realHeight, Imagick::FILTER_LANCZOS, static::RESIZE_BLUR, false );
 									}
 
 									// Prepare and encode the image as AVIF.
@@ -157,8 +173,8 @@
 									// Lower speed levels improve compression efficiency but increase encoding time.
 									// This behavior is dependent on the underlying AVIF/HEIF library (e.g. libheif / ImageMagick build),
 									// and may not be consistently applied across all Imagick installations or encoders.
-									$image->setOption( 'heic:speed', static::$DefaultSpeed );
-									$image->setOption( 'heif:speed', static::$DefaultSpeed );
+									$image->setOption( 'heic:speed', static::DEFAULT_SPEED );
+									$image->setOption( 'heif:speed', static::DEFAULT_SPEED );
 
 									// Export the encoded AVIF image as binary data.
 									$filecontent = $image->getImageBlob(); 
@@ -168,7 +184,7 @@
 									// Store the generated AVIF image in the cache database.
 									if( $db->row_upsert( $hash, array(
 										'quality'     => $quality,
-										'speed'       => static::$DefaultSpeed,
+										'speed'       => static::DEFAULT_SPEED,
 										'realWidth'   => $realWidth,
 										'realHeight'  => $realHeight,
 										'basename'    => basename( $picturePath ),

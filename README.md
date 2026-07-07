@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.0.0
+### Version 2.0.1
 
 ---
 
@@ -34,15 +34,19 @@ The target width is normalized as follows:
 ```
 The calculation uses the same configurable step increments (default: 50).
 
-## Late Static Binding Configuration
-The following parameters can be adjusted via late static binding:
+## Protected Constants Configuration
 
-- `$DefaultQuality` Default quality level (fallback) if an invalid value range is provided.
-- `$DefaultSpeed` AVIF encoding speed (typically 0–9 depending on libheif build; lower values increase compression quality but reduce speed).
-- `$Multiplier` Scaling factor for image width in fixed 50-step increments.
-- `$CacheTable` Name of the SQLite3 cache table for image data.
-- `$CachePath` File path to the SQLite3 cache database.
-- `$ToolkitSQLite3` Class name or reference to the ToolkitSQLite3 implementation.
+The following protected constants define the default behavior and internal configuration of PicCachePro.
+They can be overridden in child classes by redefining the constants and accessed through late static binding.
+
+- `DEFAULT_QUALITY` Default image quality level (0–100) used when no valid quality value is provided.
+- `DEFAULT_SPEED` Default AVIF encoding speed passed to the HEIF/AVIF encoder. Lower values may improve compression efficiency but increase encoding time depending on the underlying encoder implementation.
+- `MULTIPLIER` Scaling multiplier used for calculating resized image dimensions.
+- `RESIZE_BLUR` Blur parameter used during resizing. Values greater than 1 increase blur, while values below 1 reduce blur.
+- `HASH_ALGORITHM` Hash algorithm used to generate cache identifiers from image content and conversion parameters.
+- `TOOLKIT_SQLITE3` Name of the ToolkitSQLite3 class used internally for database operations.
+- `CACHE_TABLE` Name of the SQLite3 table used for storing cached image data.
+- `CACHE_PATH` File path to the SQLite3 cache database.
 
 ## Technical Requirements
 - PHP with Imagick extension
@@ -80,6 +84,11 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.0.1 Changelog:
+- Replaced internal static configuration properties with protected constants for clearer definition of default values.
+- Added new constants for resize behavior, hash generation, and internal ToolkitSQLite3 configuration.
+- Improved configuration consistency while maintaining customization through inheritance and late static binding.
 
 #### Version 2.0.0 Changelog:
 - Complete redesign and rewrite of the framework.
