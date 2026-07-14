@@ -39,37 +39,37 @@
 
 		private static function throw_invalid_filepath() : void {
 
-			throw new InvalidArgumentException( 'PicCachePro: Invalid image file path or file does not exist.' );
+			throw new RuntimeException( 'PicCachePro: Invalid image file path or file does not exist.' );
 		}
 
 
 		private static function throw_unsupported_format() : void {
 
-			throw new InvalidArgumentException( 'PicCachePro: Invalid image format. Only JPEG and PNG files are supported.' );
+			throw new RuntimeException( 'PicCachePro: Invalid image format. Only JPEG and PNG files are supported.' );
 		}
 
 
 		private static function throw_imagick_missing() : void {
 
-			throw new InvalidArgumentException( 'PicCachePro: Imagick extension is missing or not enabled.' );
+			throw new RuntimeException( 'PicCachePro: Imagick extension is missing or not enabled.' );
 		}
 
 
 		private static function throw_avif_not_supported() : void {
 
-			throw new InvalidArgumentException( 'PicCachePro: AVIF format is not supported by this Imagick installation.' );
+			throw new RuntimeException( 'PicCachePro: AVIF format is not supported by this Imagick installation.' );
 		}
 
 
 		private static function throw_database_connection_failed() : void {
 
-			throw new InvalidArgumentException( 'PicCachePro: Database connection failed or could not be initialized.' );
+			throw new RuntimeException( 'PicCachePro: Database connection failed or could not be initialized.' );
 		}
 
 
 		private static function throw_database_write_failed() : void {
 
-			throw new InvalidArgumentException( 'PicCachePro: Failed to write AVIF image to cache database.' );
+			throw new RuntimeException( 'PicCachePro: Failed to write AVIF image to cache database.' );
 		}
 
 

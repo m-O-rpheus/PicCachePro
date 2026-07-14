@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.0.1
+### Version 2.0.2
 
 ---
 
@@ -84,6 +84,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.0.2 Changelog:
+- Renamed error handling methods for clearer naming and improved validation exception handling.
 
 #### Version 2.0.1 Changelog:
 - Replaced internal static configuration properties with protected constants for clearer definition of default values.
