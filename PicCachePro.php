@@ -37,37 +37,37 @@
 		// Centralized exception handling helpers.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		private static function throw_invalid_filepath() : void {
+		private static function throw_invalid_filepath() : never {
 
 			throw new RuntimeException( 'PicCachePro: Invalid image file path or file does not exist.' );
 		}
 
 
-		private static function throw_unsupported_format() : void {
+		private static function throw_unsupported_format() : never {
 
 			throw new RuntimeException( 'PicCachePro: Invalid image format. Only JPEG and PNG files are supported.' );
 		}
 
 
-		private static function throw_imagick_missing() : void {
+		private static function throw_imagick_missing() : never {
 
 			throw new RuntimeException( 'PicCachePro: Imagick extension is missing or not enabled.' );
 		}
 
 
-		private static function throw_avif_not_supported() : void {
+		private static function throw_avif_not_supported() : never {
 
 			throw new RuntimeException( 'PicCachePro: AVIF format is not supported by this Imagick installation.' );
 		}
 
 
-		private static function throw_database_connection_failed() : void {
+		private static function throw_database_connection_failed() : never {
 
 			throw new RuntimeException( 'PicCachePro: Database connection failed or could not be initialized.' );
 		}
 
 
-		private static function throw_database_write_failed() : void {
+		private static function throw_database_write_failed() : never {
 
 			throw new RuntimeException( 'PicCachePro: Failed to write AVIF image to cache database.' );
 		}

@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.0.2
+### Version 2.0.3
 
 ---
 
@@ -84,6 +84,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.0.3 Changelog:
+- Changed: Replaced void with never for methods that always throw an exception.
 
 #### Version 2.0.2 Changelog:
 - Renamed error handling methods for clearer naming and improved validation exception handling.
