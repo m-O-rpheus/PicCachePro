@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.0.3
+### Version 2.0.4
 
 ---
 
@@ -77,13 +77,17 @@ https://github.com/m-O-rpheus/PicCachePro
 
 ---
 
-### High-level framwork dependencies required:
+### High-level framework dependencies required:
 ```
 PicCachePro-main
 :.. ToolkitSQLite3-main
 ```
 
 ---
+
+#### Version 2.0.4 Changelog:
+- Breaking change: avifCreateRawFromPath() only accepts a Closure as callback. Function names as string (e.g. `'my_function'`) or array callables (e.g. `[$object, 'method']`) are no longer supported.
+- Updated the callback docblocks from callable to Closure.
 
 #### Version 2.0.3 Changelog:
 - Changed: Replaced void with never for methods that always throw an exception.

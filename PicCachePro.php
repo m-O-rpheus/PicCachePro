@@ -86,7 +86,7 @@
 		// Supported image formats depend on the local Imagick installation.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		final public static function avifCreateRawFromPath( string $picturePath, int $quality = -1, int $targetWidth = 0, callable $callback ) : void {
+		final public static function avifCreateRawFromPath( string $picturePath, int $quality = -1, int $targetWidth = 0, Closure $callback ) : void {
 
 			if( !empty( $picturePath ) && is_file( $picturePath ) ) {
 
@@ -150,7 +150,7 @@
 
 									$filecontent = $class::resource_to_string( array_shift( $pictureCache )['binaryAvif'] );
 
-									/** @param callable(string, int, int) $callback */
+									/** @param Closure(string, int, int) $callback */
 									$callback( $filecontent, $realWidth, $realHeight );
 								}
 								else {
@@ -192,7 +192,7 @@
 										'binaryAvif'  => $class::string_to_resource( $filecontent ),
 									) ) ) {
 
-										/** @param callable(string, int, int) $callback */
+										/** @param Closure(string, int, int) $callback */
 										$callback( $filecontent, $realWidth, $realHeight );
 									}
 									else self::throw_database_write_failed();
