@@ -80,13 +80,13 @@
 		// A cached version of the processed image is stored in SQLite3 to avoid repeated AVIF conversions.
 		// Parameters:
 		// - $picturePath: Absolute path to the source image.
+		// - $callback: Receives the generated AVIF binary data and final image dimensions.
 		// - $quality: AVIF compression quality from 0-100. Falls back to the default quality value if invalid.
 		// - $targetWidth: Optional target width. The image is resized proportionally if the target width is smaller than the source width.
-		// - $callback: Receives the generated AVIF binary data and final image dimensions.
 		// Supported image formats depend on the local Imagick installation.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
-		final public static function avifCreateRawFromPath( string $picturePath, int $quality = -1, int $targetWidth = 0, Closure $callback ) : void {
+		final public static function avifCreateRawFromPath( string $picturePath, Closure $callback, int $quality = -1, int $targetWidth = 0 ) : void {
 
 			if( !empty( $picturePath ) && is_file( $picturePath ) ) {
 

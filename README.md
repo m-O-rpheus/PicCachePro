@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.0.4
+### Version 2.0.5
 
 ---
 
@@ -56,13 +56,14 @@ They can be overridden in child classes by redefining the constants and accessed
 
 ## Example:
 ```php
-PicCachePro::avifCreateRawFromPath( '/var/www/images/example.jpg', 80, 623, function( string $pictureRaw, int $width, int $height ) : void {
+PicCachePro::avifCreateRawFromPath( '/var/www/images/example.jpg', function( string $pictureRaw, int $width, int $height ) : void {
 
     header( 'Content-Type: image/avif' );
     header( 'Content-Length: ' . strlen( $pictureRaw ) );
 
     echo $pictureRaw;
-});
+
+}, 80, 623 );
 ```
 
 ## Attribution / License Notice
@@ -84,6 +85,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.0.5 Changelog:
+- Breaking change: New parameter order of avifCreateRawFromPath( $picturePath, $callback, $quality, $targetWidth ). The required callback now follows the image path, so the optional parameters are at the end and their default values apply. Fixes the deprecation "Optional parameter declared before required parameter".
 
 #### Version 2.0.4 Changelog:
 - Breaking change: avifCreateRawFromPath() only accepts a Closure as callback. Function names as string (e.g. `'my_function'`) or array callables (e.g. `[$object, 'method']`) are no longer supported.
