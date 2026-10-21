@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.0.6
+### Version 2.0.7
 
 ---
 
@@ -65,19 +65,6 @@ PicCachePro::avifCreateRawFromPath( '/var/www/images/example.jpg', function( str
 }, 80, 623 );
 ```
 
-## Exceptions
-PicCachePro throws a `RuntimeException` in the following cases:
-
-| Message | Cause |
-|---|---|
-| `PicCachePro: Invalid image file path or file does not exist.` | The path is empty or does not point to a file. |
-| `PicCachePro: Invalid image format. Only JPEG and PNG files are supported.` | The MIME type is neither `image/jpeg` nor `image/png`. |
-| `PicCachePro: Imagick extension is missing or not enabled.` | The PHP extension Imagick is not loaded. |
-| `PicCachePro: AVIF format is not supported by this Imagick installation.` | Imagick does not list the AVIF format. |
-| `PicCachePro: Unable to read the image dimensions.` | `getimagesize()` could not read the width and height of the image. |
-| `PicCachePro: Database connection failed or could not be initialized.` | The cache table or its columns could not be created. |
-| `PicCachePro: Failed to write AVIF image to cache database.` | The generated AVIF image could not be stored in the cache. |
-
 ---
 
 ## Attribution / License Notice
@@ -99,6 +86,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.0.7 Changelog:
+- README: Removed the section "Exceptions", the error messages are self-explanatory. No functional changes.
 
 #### Version 2.0.6 Changelog:
 - Added an additional error check: avifCreateRawFromPath() throws "Unable to read the image dimensions." if the image dimensions cannot be read (throw_invalid_image_size()).
