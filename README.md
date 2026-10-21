@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.0.5
+### Version 2.0.6
 
 ---
 
@@ -17,13 +17,12 @@ Previously generated images are referenced via a hash of their parameters, preve
 The goal of this framework is to deliver high image quality while maintaining very small file sizes. AVIF files are supported by most modern web browsers.
 
 ## Workflow
-- The image is loaded via its full server path.
+- The image is loaded via its full server path. Only JPEG and PNG images are supported.
 - Image quality and optional target width are processed.
 - The target width is normalized using configurable step increments (default: 50) and only applied if it is smaller than the original image width.
-- The image is encoded as AVIF and returned as binary data.
-- Before generation, the cache is checked for an existing entry.
-- If found, the cached image is returned directly.
-- Otherwise, the image is generated and stored in the cache.
+- The cache is checked for an existing entry with the same image content, quality and dimensions.
+- If found, the cached AVIF image is passed to the callback directly.
+- Otherwise, the image is encoded as AVIF, stored in the cache and then passed to the callback as binary data.
 
 ## Scaling Logic
 The target width is normalized as follows:
@@ -66,6 +65,21 @@ PicCachePro::avifCreateRawFromPath( '/var/www/images/example.jpg', function( str
 }, 80, 623 );
 ```
 
+## Exceptions
+PicCachePro throws a `RuntimeException` in the following cases:
+
+| Message | Cause |
+|---|---|
+| `PicCachePro: Invalid image file path or file does not exist.` | The path is empty or does not point to a file. |
+| `PicCachePro: Invalid image format. Only JPEG and PNG files are supported.` | The MIME type is neither `image/jpeg` nor `image/png`. |
+| `PicCachePro: Imagick extension is missing or not enabled.` | The PHP extension Imagick is not loaded. |
+| `PicCachePro: AVIF format is not supported by this Imagick installation.` | Imagick does not list the AVIF format. |
+| `PicCachePro: Unable to read the image dimensions.` | `getimagesize()` could not read the width and height of the image. |
+| `PicCachePro: Database connection failed or could not be initialized.` | The cache table or its columns could not be created. |
+| `PicCachePro: Failed to write AVIF image to cache database.` | The generated AVIF image could not be stored in the cache. |
+
+---
+
 ## Attribution / License Notice
 This repository is licensed under the MIT License.
 
@@ -86,6 +100,13 @@ PicCachePro-main
 
 ---
 
+#### Version 2.0.6 Changelog:
+- Added an additional error check: avifCreateRawFromPath() throws "Unable to read the image dimensions." if the image dimensions cannot be read (throw_invalid_image_size()).
+- Corrected the comments of avifCreateRawFromPath(): only JPEG and PNG images are supported, and the target width is rounded up to a multiple of `MULTIPLIER`.
+- Code style: Replaced `array()` with `[]`.
+- README: Added the section "Exceptions", corrected the order of the workflow (the cache is checked before the AVIF encoding) and added the `---` separator before the license notice.
+- Revised the complete changelog: All versions since 0.9 were reviewed against the commits. Short entries were completed with the actual changes, and breaking changes are marked.
+
 #### Version 2.0.5 Changelog:
 - Breaking change: New parameter order of avifCreateRawFromPath( $picturePath, $callback, $quality, $targetWidth ). The required callback now follows the image path, so the optional parameters are at the end and their default values apply. Fixes the deprecation "Optional parameter declared before required parameter".
 
@@ -97,78 +118,83 @@ PicCachePro-main
 - Changed: Replaced void with never for methods that always throw an exception.
 
 #### Version 2.0.2 Changelog:
-- Renamed error handling methods for clearer naming and improved validation exception handling.
+- Changed the exception class of all error helpers from `InvalidArgumentException` to `RuntimeException`.
 
 #### Version 2.0.1 Changelog:
-- Replaced internal static configuration properties with protected constants for clearer definition of default values.
-- Added new constants for resize behavior, hash generation, and internal ToolkitSQLite3 configuration.
-- Improved configuration consistency while maintaining customization through inheritance and late static binding.
+- Replaced the protected static properties (`$DefaultQuality`, `$DefaultSpeed`, `$Multiplier`, `$CacheTable`, `$CachePath`, `$ToolkitSQLite3`) with protected constants (`DEFAULT_QUALITY`, `DEFAULT_SPEED`, `MULTIPLIER`, `CACHE_TABLE`, `CACHE_PATH`, `TOOLKIT_SQLITE3`).
+- Added the constants `RESIZE_BLUR` and `HASH_ALGORITHM`.
+- Breaking change: Class extensions that override the configuration must redefine the constants instead of the static properties.
+- Added license info in source code (license header in `PicCachePro.php`).
 
 #### Version 2.0.0 Changelog:
-- Complete redesign and rewrite of the framework.
-- Fundamental architecture improvements for better maintainability.
-- Improved AVIF encoding workflow and caching logic.
-- Enhanced performance through optimized SQLite3 cache handling.
-- Refactored configuration system using late static binding.
-- Improved code structure, readability, and extensibility.
-- General stability and reliability improvements.
-- Removal of legacy code and outdated patterns.
+- Complete redesign and rewrite of the framework, released on `main` with the merge of the branch `Beta-Includes-SQLite3` (2026-06-17).
+- The AVIF cache is stored in a SQLite3 database (ToolkitSQLite3, table `picturecache`) instead of `.raw` files. The cache key is an xxh128 hash of the image content, the quality and the dimensions (before: SHA3-384 of the path, quality and dimensions).
+- Only JPEG and PNG images are accepted (MIME type check).
+- Centralized exception handling helpers: invalid input and failures throw an `InvalidArgumentException` instead of being ignored silently.
+- Configuration through protected static properties for late static binding (`$DefaultQuality`, `$DefaultSpeed`, `$Multiplier`, `$CacheTable`, `$CachePath`, `$ToolkitSQLite3`). The AVIF encoding speed is passed to the encoder (`heic:speed`, `heif:speed`), resizing uses a blur of 0.9.
+- Breaking change: Removed writePersistentData(), readPersistentData(), generateFullPath(), sanitizeAlphaNumDashUnderscore(), sanitizeAlphaNum() and the hooks protectedHookBasePath(), protectedHookFullPath(), protectedHookBeforeWrite() and protectedHookAfterRead(). The default value of `$quality` is -1 (falls back to the default quality).
+- Added LICENSE file and the license notice in the README.
 
 #### Version 1.0.7 Changelog:
-- Optimize Code.
+- Optimize Code: writePersistentData() and readPersistentData() check the file name before the path is generated.
 
 #### Version 1.0.6 Changelog:
-- Optimize Code.
+- Optimize Code: Internal calls of the final methods use `self::` instead of `static::`.
 
 #### Version 1.0.5 Changelog:
-- Optimize Code.
+- Optimize Code: Declared all public methods as final. Escaped the dash in the pattern of sanitizeAlphaNumDashUnderscore().
+- Breaking change: Class extensions can no longer override the public methods.
 
 #### Version 1.0.4 Changelog:
-- Optimized code for better performance and readability
-- Added extended file and data validation
-- Implemented enhanced support for class extensions
+- Optimized code for better performance and readability.
+- Added extended file and data validation: The directory must exist and be writable before writing, the file must be readable before reading.
+- Implemented enhanced support for class extensions: Added generateFullPath(), sanitizeAlphaNumDashUnderscore(), sanitizeAlphaNum() and the hooks protectedHookBasePath() and protectedHookFullPath().
+- Breaking change: protectedHookFilePath() was replaced by protectedHookBasePath() and protectedHookFullPath().
 
 #### Version 1.0.3 Changelog:
-- Renaming variables and methods.
+- Renaming variables and methods: setPersistentData() / getPersistentData() are now writePersistentData() / readPersistentData(), protectedHookPath() is now protectedHookFilePath(), protectedHookContentSet() / protectedHookContentGet() are now protectedHookBeforeWrite() / protectedHookAfterRead().
 - File methods can also work with empty content.
+- Breaking change: The previous method names no longer exist.
 
 #### Version 1.0.2 Changelog:
-- Optimized code quality.
+- Optimized code quality: One return statement per method (`$fnResult`) with `@var` docblocks, `@param` docblock for the callback.
 
 #### Version 1.0.1 Changelog:
-- Optimized code quality.
+- Optimized code quality: Removed protectedHookExtension(), the file extension is fixed to `.raw`. Simplified the file checks.
 
 #### Version 1.0 Changelog:
-- Optimized code quality.
+- Optimized code quality: setPersistentData() and getPersistentData() take a file slug (only `a-z`, `A-Z`, `0-9`, `-` and `_` are allowed), protectedHookPath() builds the full path including the extension.
+- The cache file name is `picturecache__` followed by a SHA3-384 hash of the path, quality, width and height.
 
 #### Version 0.99 Changelog:
-- Optimized code quality.
+- Optimized code quality: Added the hooks protectedHookContentSet() and protectedHookContentGet() to modify the content before writing and after reading.
 
 #### Version 0.98 Changelog:
 - Optimized code quality.
-- Added Protected methods and properties for late static binding.
+- Added Protected methods and properties for late static binding: protectedHookPath() and protectedHookExtension(). setPersistentData() and getPersistentData() take a file name instead of a full path.
 
 #### Version 0.97 Changelog:
-- Optimized code quality.
+- Optimized code quality: The target width is rounded up to a multiple of 50 instead of 100. Indentation with tabs.
 
 #### Version 0.96 Changelog:
-- Convert avifCreateRawFromPath to Callback function.
+- Convert avifCreateRawFromPath to Callback function: The AVIF data, width and height are passed to a callback instead of being returned.
+- Breaking change: New parameter `$callback`, the return type is `void`.
 
 #### Version 0.95 Changelog:
-- Bugfix: Prevent a PHP error if the server does not support imagemagick AVIF.
-- Comments updated.
+- Bugfix: Prevent a PHP error if the server does not support imagemagick AVIF (`queryFormats()` check).
+- Comments updated. The default value of `$quality` is 0 (falls back to 30).
 
 #### Version 0.94 Changelog:
-- Bugfix: avifCreateRawFromPath.
+- Bugfix: avifCreateRawFromPath: The target width is only applied if it is smaller than the source width (read with `getimagesize()`), an invalid quality falls back to 30.
 
 #### Version 0.93 Changelog:
-- Round the image width.
+- Round the image width: The target width is rounded up to a multiple of 100, so not every pixel width is cached separately.
 
 #### Version 0.92 Changelog:
-- Code Update.
+- Code Update: Renamed setDataCache() / getDataCache() to setPersistentData() / getPersistentData() (file extension `.raw` instead of `.cache`) and avifCreateFromPath() to avifCreateRawFromPath(), which returns the AVIF binary data instead of a Base64 data URL.
 
 #### Version 0.91 Changelog:
-- Code Update.
+- Code Update: Replaced picture_createfrom_path() (WebP) with avifCreateFromPath() (AVIF data URL) and a file cache in `_cache_chmod777` (setDataCache(), getDataCache()).
 
 #### Version 0.9 Changelog:
-- Init.
+- Init: picture_createfrom_path() creates a WebP data URL (Base64) from an image path with Imagick, with optional resizing and compression settings.

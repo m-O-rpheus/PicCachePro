@@ -61,6 +61,12 @@
 		}
 
 
+		private static function throw_invalid_image_size() : never {
+
+			throw new RuntimeException( 'PicCachePro: Unable to read the image dimensions.' );
+		}
+
+
 		private static function throw_database_connection_failed() : never {
 
 			throw new RuntimeException( 'PicCachePro: Database connection failed or could not be initialized.' );
@@ -82,8 +88,8 @@
 		// - $picturePath: Absolute path to the source image.
 		// - $callback: Receives the generated AVIF binary data and final image dimensions.
 		// - $quality: AVIF compression quality from 0-100. Falls back to the default quality value if invalid.
-		// - $targetWidth: Optional target width. The image is resized proportionally if the target width is smaller than the source width.
-		// Supported image formats depend on the local Imagick installation.
+		// - $targetWidth: Optional target width. It is rounded up to a multiple of MULTIPLIER (default: 50) and only applied if it is smaller than the source width. The height is adjusted proportionally.
+		// Only JPEG and PNG images are supported. The Imagick installation must support the AVIF format.
 		// -----------------------------------------------------------------------------------------------------------------------------
 
 		final public static function avifCreateRawFromPath( string $picturePath, Closure $callback, int $quality = -1, int $targetWidth = 0 ) : void {
@@ -96,109 +102,113 @@
 
 					if( extension_loaded( 'imagick' ) === true ) {
 
-						$size = getimagesize( $picturePath );
+						if( in_array( 'AVIF', Imagick::queryFormats(), true ) ) {
 
-						if( in_array( 'AVIF', Imagick::queryFormats(), true ) && !empty( $size ) && is_array( $size ) && isset( $size[0], $size[1] ) ) {
+							$size = getimagesize( $picturePath );
 
-							$class = static::TOOLKIT_SQLITE3;
-							$db = new $class( static::CACHE_PATH, static::CACHE_TABLE );
+							if( !empty( $size ) && is_array( $size ) && isset( $size[0], $size[1] ) ) {
 
-							if( $db->table_add_ignore() && $db->columns_add_ignore( 'quality', 'speed', 'realWidth', 'realHeight', 'basename', 'sizeKB', 'binaryAvif' ) ) {
+								$class = static::TOOLKIT_SQLITE3;
+								$db = new $class( static::CACHE_PATH, static::CACHE_TABLE );
 
-
-								// Calculate output dimensions based on source size and normalized target width.
-								$sourceWidth  = $size[0];
-								$sourceHeight = $size[1];
-
-								$realWidth  = $sourceWidth;
-								$realHeight = $sourceHeight;
-
-								if( $targetWidth > 0 ) {
-
-									$targetWidth = intval( ceil( $targetWidth / static::MULTIPLIER ) * static::MULTIPLIER );
-
-									if( $targetWidth < $sourceWidth ) {
-
-										$realWidth  = $targetWidth;
-										$realHeight = intval( ceil( $targetWidth / ( $sourceWidth / $sourceHeight ) ) );
-									}
-								}
+								if( $db->table_add_ignore() && $db->columns_add_ignore( 'quality', 'speed', 'realWidth', 'realHeight', 'basename', 'sizeKB', 'binaryAvif' ) ) {
 
 
-								// Fallback to the default quality if the value is outside the valid range.
-								if( $quality < 0 || $quality > 100 ) $quality = static::DEFAULT_QUALITY;
+									// Calculate output dimensions based on source size and normalized target width.
+									$sourceWidth  = $size[0];
+									$sourceHeight = $size[1];
 
+									$realWidth  = $sourceWidth;
+									$realHeight = $sourceHeight;
 
-								// Generate a unique cache key based on image content, quality, and target dimensions.
-								$hash = hash( static::HASH_ALGORITHM, hash_file( static::HASH_ALGORITHM, $picturePath, true ) . '|' . $quality . '|' . $realWidth . '|' . $realHeight );
+									if( $targetWidth > 0 ) {
 
+										$targetWidth = intval( ceil( $targetWidth / static::MULTIPLIER ) * static::MULTIPLIER );
 
-								// Create the SELECT statement to check whether the image already exists in the cache table.
-								$select = array(
-									'columns' => ['binaryAvif'],
-									'where' => [
-										'column' => '_slug',
-										'op'     => '=',
-										'value'  => $hash,
-									],
-									'limit' => 1,
-								);
+										if( $targetWidth < $sourceWidth ) {
 
-
-								// Return cached AVIF if available, otherwise generate and store it in cache.
-								if( !empty( $pictureCache = $db->select( $select ) ) ) {
-
-									$filecontent = $class::resource_to_string( array_shift( $pictureCache )['binaryAvif'] );
-
-									/** @param Closure(string, int, int) $callback */
-									$callback( $filecontent, $realWidth, $realHeight );
-								}
-								else {
-
-									// Load the source image into Imagick.
-									$image = new Imagick();
-									$image->readImage( $picturePath );
-
-									// Resize the image proportionally if the calculated dimensions differ from the original image size.
-									if( $realWidth !== $sourceWidth ) {
-
-										$image->resizeImage( $realWidth, $realHeight, Imagick::FILTER_LANCZOS, static::RESIZE_BLUR, false );
+											$realWidth  = $targetWidth;
+											$realHeight = intval( ceil( $targetWidth / ( $sourceWidth / $sourceHeight ) ) );
+										}
 									}
 
-									// Prepare and encode the image as AVIF.
-									$image->stripImage();
-									$image->setImageFormat( 'avif' );
-									$image->setCompressionQuality( $quality );
 
-									// Lower speed levels improve compression efficiency but increase encoding time.
-									// This behavior is dependent on the underlying AVIF/HEIF library (e.g. libheif / ImageMagick build),
-									// and may not be consistently applied across all Imagick installations or encoders.
-									$image->setOption( 'heic:speed', static::DEFAULT_SPEED );
-									$image->setOption( 'heif:speed', static::DEFAULT_SPEED );
+									// Fallback to the default quality if the value is outside the valid range.
+									if( $quality < 0 || $quality > 100 ) $quality = static::DEFAULT_QUALITY;
 
-									// Export the encoded AVIF image as binary data.
-									$filecontent = $image->getImageBlob(); 
-									$image->clear();
-									$image->destroy();
 
-									// Store the generated AVIF image in the cache database.
-									if( $db->row_upsert( $hash, array(
-										'quality'     => $quality,
-										'speed'       => static::DEFAULT_SPEED,
-										'realWidth'   => $realWidth,
-										'realHeight'  => $realHeight,
-										'basename'    => basename( $picturePath ),
-										'sizeKB'      => round( strlen( $filecontent ) / 1024, 2 ),
-										'binaryAvif'  => $class::string_to_resource( $filecontent ),
-									) ) ) {
+									// Generate a unique cache key based on image content, quality, and target dimensions.
+									$hash = hash( static::HASH_ALGORITHM, hash_file( static::HASH_ALGORITHM, $picturePath, true ) . '|' . $quality . '|' . $realWidth . '|' . $realHeight );
+
+
+									// Create the SELECT statement to check whether the image already exists in the cache table.
+									$select = [
+										'columns' => ['binaryAvif'],
+										'where' => [
+											'column' => '_slug',
+											'op'     => '=',
+											'value'  => $hash,
+										],
+										'limit' => 1,
+									];
+
+
+									// Return cached AVIF if available, otherwise generate and store it in cache.
+									if( !empty( $pictureCache = $db->select( $select ) ) ) {
+
+										$filecontent = $class::resource_to_string( array_shift( $pictureCache )['binaryAvif'] );
 
 										/** @param Closure(string, int, int) $callback */
 										$callback( $filecontent, $realWidth, $realHeight );
 									}
-									else self::throw_database_write_failed();
+									else {
+
+										// Load the source image into Imagick.
+										$image = new Imagick();
+										$image->readImage( $picturePath );
+
+										// Resize the image proportionally if the calculated dimensions differ from the original image size.
+										if( $realWidth !== $sourceWidth ) {
+
+											$image->resizeImage( $realWidth, $realHeight, Imagick::FILTER_LANCZOS, static::RESIZE_BLUR, false );
+										}
+
+										// Prepare and encode the image as AVIF.
+										$image->stripImage();
+										$image->setImageFormat( 'avif' );
+										$image->setCompressionQuality( $quality );
+
+										// Lower speed levels improve compression efficiency but increase encoding time.
+										// This behavior is dependent on the underlying AVIF/HEIF library (e.g. libheif / ImageMagick build),
+										// and may not be consistently applied across all Imagick installations or encoders.
+										$image->setOption( 'heic:speed', static::DEFAULT_SPEED );
+										$image->setOption( 'heif:speed', static::DEFAULT_SPEED );
+
+										// Export the encoded AVIF image as binary data.
+										$filecontent = $image->getImageBlob(); 
+										$image->clear();
+										$image->destroy();
+
+										// Store the generated AVIF image in the cache database.
+										if( $db->row_upsert( $hash, [
+											'quality'     => $quality,
+											'speed'       => static::DEFAULT_SPEED,
+											'realWidth'   => $realWidth,
+											'realHeight'  => $realHeight,
+											'basename'    => basename( $picturePath ),
+											'sizeKB'      => round( strlen( $filecontent ) / 1024, 2 ),
+											'binaryAvif'  => $class::string_to_resource( $filecontent ),
+										] ) ) {
+
+											/** @param Closure(string, int, int) $callback */
+											$callback( $filecontent, $realWidth, $realHeight );
+										}
+										else self::throw_database_write_failed();
+									}
 								}
+								else self::throw_database_connection_failed();
 							}
-							else self::throw_database_connection_failed();
+							else self::throw_invalid_image_size();
 						}
 						else self::throw_avif_not_supported();
 					}
