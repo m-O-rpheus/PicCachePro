@@ -185,7 +185,7 @@
 										$image->setOption( 'heif:speed', static::DEFAULT_SPEED );
 
 										// Export the encoded AVIF image as binary data.
-										$filecontent = $image->getImageBlob(); 
+										$filecontent = $image->getImageBlob();
 										$image->clear();
 										$image->destroy();
 

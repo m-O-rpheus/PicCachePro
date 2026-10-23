@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.0.8
+### Version 2.0.9
 
 ---
 
@@ -86,6 +86,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.0.9 Changelog:
+- Code style: removed trailing whitespace. No functional changes.
 
 #### Version 2.0.8 Changelog:
 - Code style: removed trailing whitespace in the license header. No functional changes.
