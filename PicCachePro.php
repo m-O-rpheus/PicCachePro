@@ -111,7 +111,7 @@
 								$class = static::TOOLKIT_SQLITE3;
 								$db = new $class( static::CACHE_PATH, static::CACHE_TABLE );
 
-								if( $db->table_add_ignore() && $db->columns_add_ignore( 'quality', 'speed', 'realWidth', 'realHeight', 'basename', 'sizeKB', 'binaryAvif' ) ) {
+								if( $db->table_add_ignore() && $db->columns_add_ignore( 'quality', 'speed', 'realwidth', 'realheight', 'basename', 'sizekb', 'binaryavif' ) ) {
 
 
 									// Calculate output dimensions based on source size and normalized target width.
@@ -143,7 +143,7 @@
 
 									// Create the SELECT statement to check whether the image already exists in the cache table.
 									$select = [
-										'columns' => ['binaryAvif'],
+										'columns' => ['binaryavif'],
 										'where' => [
 											'column' => '_slug',
 											'op'     => '=',
@@ -156,7 +156,7 @@
 									// Return cached AVIF if available, otherwise generate and store it in cache.
 									if( !empty( $pictureCache = $db->select( $select ) ) ) {
 
-										$filecontent = $class::resource_to_string( array_shift( $pictureCache )['binaryAvif'] );
+										$filecontent = $class::resource_to_string( array_shift( $pictureCache )['binaryavif'] );
 
 										/** @param Closure(string, int, int) $callback */
 										$callback( $filecontent, $realWidth, $realHeight );
@@ -193,11 +193,11 @@
 										if( $db->row_upsert( $hash, [
 											'quality'     => $quality,
 											'speed'       => static::DEFAULT_SPEED,
-											'realWidth'   => $realWidth,
-											'realHeight'  => $realHeight,
+											'realwidth'   => $realWidth,
+											'realheight'  => $realHeight,
 											'basename'    => basename( $picturePath ),
-											'sizeKB'      => round( strlen( $filecontent ) / 1024, 2 ),
-											'binaryAvif'  => $class::string_to_resource( $filecontent ),
+											'sizekb'      => round( strlen( $filecontent ) / 1024, 2 ),
+											'binaryavif'  => $class::string_to_resource( $filecontent ),
 										] ) ) {
 
 											/** @param Closure(string, int, int) $callback */

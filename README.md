@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.0.9
+### Version 2.1.0
 
 ---
 
@@ -86,6 +86,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.1.0 Changelog:
+- Breaking change: the SQL identifiers are lowercase (`realwidth`, `realheight`, `sizekb`, `binaryavif` instead of `realWidth`, `realHeight`, `sizeKB`, `binaryAvif`). Existing databases must be created again.
 
 #### Version 2.0.9 Changelog:
 - Code style: removed trailing whitespace. No functional changes.
