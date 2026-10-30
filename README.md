@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.1.3
+### Version 2.1.4
 
 ---
 
@@ -88,6 +88,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.1.4 Changelog:
+- Added `_cache_chmod777/.htaccess` with `Require all denied`, which denies direct access to the default database folder (Apache). No functional changes.
 
 #### Version 2.1.3 Changelog:
 - README: new section "Requirements" (PHP 8.3 or higher, PHP extensions, PHP settings, browser, repositories, other requirements), structured the same in all repositories. For dependencies it refers to the repositories, whose requirements apply as well. It replaces the section "Technical Requirements". No functional changes.
