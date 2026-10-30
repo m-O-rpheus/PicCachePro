@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.1.0
+### Version 2.1.1
 
 ---
 
@@ -86,6 +86,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.1.1 Changelog:
+- `.gitignore`: all files in the default database folder `_cache_chmod777/` are ignored, except `.gitkeep` and `.htaccess`. No functional changes.
 
 #### Version 2.1.0 Changelog:
 - Breaking change: the SQL identifiers are lowercase (`realwidth`, `realheight`, `sizekb`, `binaryavif` instead of `realWidth`, `realHeight`, `sizeKB`, `binaryAvif`). Existing databases must be created again.
