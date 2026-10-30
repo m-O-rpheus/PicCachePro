@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.1.2
+### Version 2.1.3
 
 ---
 
@@ -47,12 +47,6 @@ They can be overridden in child classes by redefining the constants and accessed
 - `CACHE_TABLE` Name of the SQLite3 table used for storing cached image data.
 - `CACHE_PATH` File path to the SQLite3 cache database.
 
-## Technical Requirements
-- PHP with Imagick extension
-- AVIF support in Imagick
-- SQLite3
-- ToolkitSQLite3 class
-
 ## Example:
 ```php
 PicCachePro::avifCreateRawFromPath( '/var/www/images/example.jpg', function( string $pictureRaw, int $width, int $height ) : void {
@@ -64,6 +58,14 @@ PicCachePro::avifCreateRawFromPath( '/var/www/images/example.jpg', function( str
 
 }, 80, 623 );
 ```
+
+---
+
+## Requirements
+- **PHP:** 8.3 or higher
+- **PHP extensions:** `imagick` with AVIF support, `fileinfo`
+- **Repositories:** ToolkitSQLite3 (the requirements of this repository apply as well)
+- **Other:** write access to the folder of the cache database (`CACHE_PATH`)
 
 ---
 
@@ -86,6 +88,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.1.3 Changelog:
+- README: new section "Requirements" (PHP 8.3 or higher, PHP extensions, PHP settings, browser, repositories, other requirements), structured the same in all repositories. For dependencies it refers to the repositories, whose requirements apply as well. It replaces the section "Technical Requirements". No functional changes.
 
 #### Version 2.1.2 Changelog:
 - Code style: the README examples are indented with tabs instead of four spaces. No functional changes.
