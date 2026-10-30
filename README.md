@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.1.1
+### Version 2.1.2
 
 ---
 
@@ -57,10 +57,10 @@ They can be overridden in child classes by redefining the constants and accessed
 ```php
 PicCachePro::avifCreateRawFromPath( '/var/www/images/example.jpg', function( string $pictureRaw, int $width, int $height ) : void {
 
-    header( 'Content-Type: image/avif' );
-    header( 'Content-Length: ' . strlen( $pictureRaw ) );
+	header( 'Content-Type: image/avif' );
+	header( 'Content-Length: ' . strlen( $pictureRaw ) );
 
-    echo $pictureRaw;
+	echo $pictureRaw;
 
 }, 80, 623 );
 ```
@@ -86,6 +86,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.1.2 Changelog:
+- Code style: the README examples are indented with tabs instead of four spaces. No functional changes.
 
 #### Version 2.1.1 Changelog:
 - `.gitignore`: all files in the default database folder `_cache_chmod777/` are ignored, except `.gitkeep` and `.htaccess`. No functional changes.
