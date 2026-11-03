@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.1.4
+### Version 2.1.5
 
 ---
 
@@ -88,6 +88,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.1.5 Changelog:
+- `avifCreateRawFromPath()`: `table_add_ignore()`, `columns_add_ignore()` and `row_upsert()` of ToolkitSQLite3 are called without an `if`, they return `true` or throw a `RuntimeException`, which is passed on. Removed the unreachable helpers `throw_database_connection_failed()` and `throw_database_write_failed()`. No functional changes.
 
 #### Version 2.1.4 Changelog:
 - Added `_cache_chmod777/.htaccess` with `Require all denied`, which denies direct access to the default database folder (Apache). No functional changes.
