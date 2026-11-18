@@ -145,7 +145,8 @@
 								// Return cached AVIF if available, otherwise generate and store it in cache.
 								if( !empty( $pictureCache = $db->select( $select ) ) ) {
 
-									$filecontent = $class::resource_to_string( array_shift( $pictureCache )['binaryavif'] );
+									// ToolkitSQLite3 returns the stored AVIF data as string (BLOB).
+									$filecontent = array_shift( $pictureCache )['binaryavif'];
 
 									/** @param Closure(string, int, int) $callback */
 									$callback( $filecontent, $realWidth, $realHeight );
@@ -186,7 +187,7 @@
 										'realheight'  => $realHeight,
 										'basename'    => basename( $picturePath ),
 										'sizekb'      => round( strlen( $filecontent ) / 1024, 2 ),
-										'binaryavif'  => $class::string_to_resource( $filecontent ),
+										'binaryavif'  => $filecontent,
 									] );
 
 									/** @param Closure(string, int, int) $callback */

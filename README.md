@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.1.5
+### Version 2.1.6
 
 ---
 
@@ -88,6 +88,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.1.6 Changelog:
+- Align to ToolkitSQLite3 1.5.9: `avifCreateRawFromPath()` stores and reads the cached AVIF data as `string` (BLOB), without `string_to_resource()` and `resource_to_string()` (removed in ToolkitSQLite3 1.5.9). Existing cache databases stay readable, because the AVIF data was already stored as BLOB.
 
 #### Version 2.1.5 Changelog:
 - `avifCreateRawFromPath()`: `table_add_ignore()`, `columns_add_ignore()` and `row_upsert()` of ToolkitSQLite3 are called without an `if`, they return `true` or throw a `RuntimeException`, which is passed on. Removed the unreachable helpers `throw_database_connection_failed()` and `throw_database_write_failed()`. No functional changes.
