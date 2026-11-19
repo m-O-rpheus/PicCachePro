@@ -1,11 +1,10 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.1.7
+### Version 2.1.8
 
 ---
 
 ## Overview
-
 PicCachePro is a lightweight PHP framework for converting JPEG and PNG images into the AVIF format. Processing is done using the full server path to the image file.
 
 Optionally, both image quality and a target width can be defined. The target width is normalized to increments of 50, rounded up, and only applied if it is smaller than the original image width.
@@ -35,12 +34,12 @@ The target width is normalized as follows:
 149 → 150
 151 → 200
 ```
+
 The calculation uses the same configurable step increments (default: 50).
 
 ---
 
 ## Protected Constants Configuration
-
 The following protected constants define the default behavior and internal configuration of PicCachePro.
 They can be overridden in child classes by redefining the constants and accessed through late static binding.
 
@@ -71,7 +70,7 @@ PicCachePro::avifCreateRawFromPath( '/var/www/images/example.jpg', function( str
 
 ## Requirements
 - **PHP:** 8.3 or higher
-- **PHP extensions:** `imagick` with AVIF support, `fileinfo`
+- **PHP extensions:** `fileinfo`, `imagick` with AVIF support
 - **Repositories:** ToolkitSQLite3 (the requirements of this repository apply as well)
 - **Other:** write access to the folder of the cache database (`CACHE_PATH`)
 
@@ -97,11 +96,15 @@ PicCachePro-main
 
 ---
 
+#### Version 2.1.8 Changelog:
+- Revised the complete changelog again: checked against the code changes of the commits, completed the entries 0.95, 0.96, 0.97, 1.0.2, 1.0.4, 2.0.0, 2.0.1, 2.0.4 and 2.1.6, references to other repositories only as "Align to <Repository> Version x.y.z". No functional changes.
+- README: uniform spacing (the text follows a heading directly, a blank line after a code block), the PHP extensions of the requirements in alphabetical order. No functional changes.
+
 #### Version 2.1.7 Changelog:
 - README: a `---` separates every content section, the heading "Example" has no trailing colon, no trailing spaces in the code block of "Scaling Logic". No functional changes.
 
 #### Version 2.1.6 Changelog:
-- Align to ToolkitSQLite3 1.5.9: `avifCreateRawFromPath()` stores and reads the cached AVIF data as `string` (BLOB), without `string_to_resource()` and `resource_to_string()` (removed in ToolkitSQLite3 1.5.9). Existing cache databases stay readable, because the AVIF data was already stored as BLOB.
+- Align to ToolkitSQLite3 Version 1.5.9: `avifCreateRawFromPath()` stores and reads the cached AVIF data as `string` (BLOB), without `string_to_resource()` and `resource_to_string()`, which no longer exist in ToolkitSQLite3. Existing cache databases stay readable, because the AVIF data was already stored as BLOB.
 
 #### Version 2.1.5 Changelog:
 - `avifCreateRawFromPath()`: `table_add_ignore()`, `columns_add_ignore()` and `row_upsert()` of ToolkitSQLite3 are called without an `if`, they return `true` or throw a `RuntimeException`, which is passed on. Removed the unreachable helpers `throw_database_connection_failed()` and `throw_database_write_failed()`. No functional changes.
@@ -143,6 +146,7 @@ PicCachePro-main
 #### Version 2.0.4 Changelog:
 - Breaking change: avifCreateRawFromPath() only accepts a Closure as callback. Function names as string (e.g. `'my_function'`) or array callables (e.g. `[$object, 'method']`) are no longer supported.
 - Updated the callback docblocks from callable to Closure.
+- README: corrected the typo "framwork" in the heading of the dependency tree.
 
 #### Version 2.0.3 Changelog:
 - Changed: Replaced void with never for methods that always throw an exception.
@@ -154,7 +158,8 @@ PicCachePro-main
 - Replaced the protected static properties (`$DefaultQuality`, `$DefaultSpeed`, `$Multiplier`, `$CacheTable`, `$CachePath`, `$ToolkitSQLite3`) with protected constants (`DEFAULT_QUALITY`, `DEFAULT_SPEED`, `MULTIPLIER`, `CACHE_TABLE`, `CACHE_PATH`, `TOOLKIT_SQLITE3`).
 - Added the constants `RESIZE_BLUR` and `HASH_ALGORITHM`.
 - Breaking change: Class extensions that override the configuration must redefine the constants instead of the static properties.
-- Added license info in source code (license header in `PicCachePro.php`).
+- Added license info in source code (license header in `PicCachePro.php`), removed the comment `// PicCachePro::xxx();` after the class declaration.
+- README: the section "Late Static Binding Configuration" is replaced by "Protected Constants Configuration".
 
 #### Version 2.0.0 Changelog:
 - Complete redesign and rewrite of the framework, released on `main` with the merge of the branch `Beta-Includes-SQLite3` (2026-06-17).
@@ -164,6 +169,8 @@ PicCachePro-main
 - Configuration through protected static properties for late static binding (`$DefaultQuality`, `$DefaultSpeed`, `$Multiplier`, `$CacheTable`, `$CachePath`, `$ToolkitSQLite3`). The AVIF encoding speed is passed to the encoder (`heic:speed`, `heif:speed`), resizing uses a blur of 0.9.
 - Breaking change: Removed writePersistentData(), readPersistentData(), generateFullPath(), sanitizeAlphaNumDashUnderscore(), sanitizeAlphaNum() and the hooks protectedHookBasePath(), protectedHookFullPath(), protectedHookBeforeWrite() and protectedHookAfterRead(). The default value of `$quality` is -1 (falls back to the default quality).
 - Added LICENSE file and the license notice in the README.
+- Added `.gitkeep`.
+- README: rewritten in English with the sections "Overview", "Workflow", "Scaling Logic", "Late Static Binding Configuration", "Technical Requirements" and "Example".
 
 #### Version 1.0.7 Changelog:
 - Optimize Code: writePersistentData() and readPersistentData() check the file name before the path is generated.
@@ -180,6 +187,7 @@ PicCachePro-main
 - Added extended file and data validation: The directory must exist and be writable before writing, the file must be readable before reading.
 - Implemented enhanced support for class extensions: Added generateFullPath(), sanitizeAlphaNumDashUnderscore(), sanitizeAlphaNum() and the hooks protectedHookBasePath() and protectedHookFullPath().
 - Breaking change: protectedHookFilePath() was replaced by protectedHookBasePath() and protectedHookFullPath().
+- Added `.gitignore`.
 
 #### Version 1.0.3 Changelog:
 - Renaming variables and methods: setPersistentData() / getPersistentData() are now writePersistentData() / readPersistentData(), protectedHookPath() is now protectedHookFilePath(), protectedHookContentSet() / protectedHookContentGet() are now protectedHookBeforeWrite() / protectedHookAfterRead().
@@ -188,6 +196,7 @@ PicCachePro-main
 
 #### Version 1.0.2 Changelog:
 - Optimized code quality: One return statement per method (`$fnResult`) with `@var` docblocks, `@param` docblock for the callback.
+- README: added the dependency tree (low-level framework without dependencies).
 
 #### Version 1.0.1 Changelog:
 - Optimized code quality: Removed protectedHookExtension(), the file extension is fixed to `.raw`. Simplified the file checks.
@@ -205,14 +214,17 @@ PicCachePro-main
 
 #### Version 0.97 Changelog:
 - Optimized code quality: The target width is rounded up to a multiple of 50 instead of 100. Indentation with tabs.
+- The height is rounded up again (`ceil()`), `resizeImage()` resizes without `bestfit`.
 
 #### Version 0.96 Changelog:
 - Convert avifCreateRawFromPath to Callback function: The AVIF data, width and height are passed to a callback instead of being returned.
 - Breaking change: New parameter `$callback`, the return type is `void`.
+- The height of a downscaled image is rounded with `round()` (before: `ceil()`), the callback is not called if `getimagesize()` fails.
 
 #### Version 0.95 Changelog:
 - Bugfix: Prevent a PHP error if the server does not support imagemagick AVIF (`queryFormats()` check).
 - Comments updated. The default value of `$quality` is 0 (falls back to 30).
+- README: German description of the conversion, the target width and the AVIF cache.
 
 #### Version 0.94 Changelog:
 - Bugfix: avifCreateRawFromPath: The target width is only applied if it is smaller than the source width (read with `getimagesize()`), an invalid quality falls back to 30.
