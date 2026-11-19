@@ -1,6 +1,6 @@
 # PicCachePro
 ## by Markus Jäger
-### Version 2.1.6
+### Version 2.1.7
 
 ---
 
@@ -16,6 +16,8 @@ Previously generated images are referenced via a hash of their parameters, preve
 
 The goal of this framework is to deliver high image quality while maintaining very small file sizes. AVIF files are supported by most modern web browsers.
 
+---
+
 ## Workflow
 - The image is loaded via its full server path. Only JPEG and PNG images are supported.
 - Image quality and optional target width are processed.
@@ -24,14 +26,18 @@ The goal of this framework is to deliver high image quality while maintaining ve
 - If found, the cached AVIF image is passed to the callback directly.
 - Otherwise, the image is encoded as AVIF, stored in the cache and then passed to the callback as binary data.
 
+---
+
 ## Scaling Logic
 The target width is normalized as follows:
 ```
-120 → 150  
-149 → 150  
-151 → 200  
+120 → 150
+149 → 150
+151 → 200
 ```
 The calculation uses the same configurable step increments (default: 50).
+
+---
 
 ## Protected Constants Configuration
 
@@ -47,7 +53,9 @@ They can be overridden in child classes by redefining the constants and accessed
 - `CACHE_TABLE` Name of the SQLite3 table used for storing cached image data.
 - `CACHE_PATH` File path to the SQLite3 cache database.
 
-## Example:
+---
+
+## Example
 ```php
 PicCachePro::avifCreateRawFromPath( '/var/www/images/example.jpg', function( string $pictureRaw, int $width, int $height ) : void {
 
@@ -88,6 +96,9 @@ PicCachePro-main
 ```
 
 ---
+
+#### Version 2.1.7 Changelog:
+- README: a `---` separates every content section, the heading "Example" has no trailing colon, no trailing spaces in the code block of "Scaling Logic". No functional changes.
 
 #### Version 2.1.6 Changelog:
 - Align to ToolkitSQLite3 1.5.9: `avifCreateRawFromPath()` stores and reads the cached AVIF data as `string` (BLOB), without `string_to_resource()` and `resource_to_string()` (removed in ToolkitSQLite3 1.5.9). Existing cache databases stay readable, because the AVIF data was already stored as BLOB.
